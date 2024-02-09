@@ -18,6 +18,53 @@ function ready() {
     canvas.width = GAME_VARIABLES.canvasWidth;
     canvas.height = GAME_VARIABLES.canvasHeight;
 
-    ctx.fillStyle = "#FFF";
-    ctx.fillRect(canvas.width / 2, canvas.height / 2, 5, 5);
+    const ball = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: 2,
+        vy: 5,
+        radius: 5,
+        draw: function() {
+            ctx.fillStyle = "#FFF";
+            ctx.fillRect(this.x, this.y, 5, 5);
+        },
+        update: function() {
+            // Prevent leaving screen bounds.
+            if (this.x + this.radius >= canvas.width || this.x <= 0) {
+                this.vx = -this.vx;
+            }
+            if (this.y + this.radius >= canvas.height || this.y <= 0) {
+                this.vy = -this.vy;
+            }
+
+            // Update position.
+            this.x += this.vx;
+            this.y += this.vy;
+        }
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update game entities.
+        ball.update();
+
+        // Draw game entities.
+        ball.draw();
+
+        // Call the next frame.
+        loopId = requestAnimationFrame(gameLoop);
+    }
+
+    // Game entry point.
+    var loopId = requestAnimationFrame(gameLoop);
+
+    // Keyboard events.
+    document.addEventListener("keydown", (e) => {
+        switch (e.key) {
+            case "q":
+                cancelAnimationFrame(loopId);
+                break;
+        }
+    });
 }
