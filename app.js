@@ -1,6 +1,9 @@
 const GAME_VARIABLES = {
     "canvasWidth": 800,
-    "canvasHeight": 600
+    "canvasHeight": 600,
+    inputKeys: [],
+    p1Controls: { up: "w", down: "s" },
+    p2Controls: { up: "ArrowUp", down: "ArrowDown" }
 }
 
 if (document.readyState == "loading") {
@@ -43,14 +46,46 @@ function ready() {
         }
     }
 
+    class paddle {
+        constructor(x, y, controls) {
+            this.x = x;
+            this.y = y;
+            this.controls = controls;
+        }
+        draw() {
+            ctx.fillStyle = "#FFF";
+            ctx.fillRect(this.x, this.y, 5, 30);
+        }
+        update() {
+            if (GAME_VARIABLES.inputKeys[this.controls.up]) {
+                this.y -= 10;
+            }
+            if (GAME_VARIABLES.inputKeys[this.controls.down]) {
+                this.y += 10;
+            }
+            if (this.y >= canvas.height * 0.9) {
+                this.y = canvas.height * 0.9;
+            } else if (this.y <= canvas.height * 0.05) {
+                this.y = canvas.height * 0.05;
+            };
+        }
+    }
+
+    var paddle1 = new paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
+    var paddle2 = new paddle(canvas.width * 0.8, canvas.height / 2, GAME_VARIABLES.p2Controls);
+
     function gameLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Update game entities.
         ball.update();
+        paddle1.update();
+        paddle2.update();
 
         // Draw game entities.
         ball.draw();
+        paddle1.draw();
+        paddle2.draw();
 
         // Call the next frame.
         loopId = requestAnimationFrame(gameLoop);
@@ -59,11 +94,24 @@ function ready() {
     // Game entry point.
     var loopId = requestAnimationFrame(gameLoop);
 
-    // Keyboard events.
+    // Player inputs.
     document.addEventListener("keydown", (e) => {
         switch (e.key) {
-            case "q":
-                cancelAnimationFrame(loopId);
+            case GAME_VARIABLES.p1Controls.up:
+            case GAME_VARIABLES.p1Controls.down:
+            case GAME_VARIABLES.p2Controls.up:
+            case GAME_VARIABLES.p2Controls.down:
+                GAME_VARIABLES.inputKeys[e.key] = true;
+                break;
+        }
+    });
+    document.addEventListener("keyup", (e) => {
+        switch (e.key) {
+            case GAME_VARIABLES.p1Controls.up:
+            case GAME_VARIABLES.p1Controls.down:
+            case GAME_VARIABLES.p2Controls.up:
+            case GAME_VARIABLES.p2Controls.down:
+                GAME_VARIABLES.inputKeys[e.key] = false;
                 break;
         }
     });
