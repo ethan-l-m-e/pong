@@ -26,23 +26,63 @@ function ready() {
         y: canvas.height / 2,
         vx: 2,
         vy: 5,
-        radius: 5,
+        width: 5,
         draw: function() {
             ctx.fillStyle = "#FFF";
-            ctx.fillRect(this.x, this.y, 5, 5);
+            ctx.fillRect(this.x, this.y, this.width, this.width);
         },
         update: function() {
-            // Prevent leaving screen bounds.
-            if (this.x + this.radius >= canvas.width || this.x <= 0) {
+            // Reverse directions at screen edges.
+            if (this.x + this.width >= canvas.width || this.x <= 0) {
                 this.vx = -this.vx;
             }
-            if (this.y + this.radius >= canvas.height || this.y <= 0) {
+            if (this.y + this.width >= canvas.height || this.y <= 0) {
                 this.vy = -this.vy;
             }
 
             // Update position.
             this.x += this.vx;
             this.y += this.vy;
+        },
+        collideLeft: function(leftPaddle) {
+            // If one point of ball exists within the bounds of paddle.
+            if (this.x <= leftPaddle.x + leftPaddle.width / 2 && 
+                this.x > leftPaddle.x &&
+                this.y <= leftPaddle.y + leftPaddle.height &&
+                this.y + this.width >= leftPaddle.y) {
+                
+                if (this.y > leftPaddle.y + 20) { // Ball is at lower section.
+                    // Get a direction based on dist from center.
+                    this.vx = 2;
+                    this.vy = 5
+                } else if (this.y < leftPaddle.y + 10) { // Ball is at upper section.
+                    this.vx = 2;
+                    this.vy = -5
+                } else { // Ball is at middle section.
+                    this.vx = 2;
+                    this.vy = 0;
+                }
+            }
+        },
+        collideRight: function(rightPaddle) {
+            // If one point of ball exists within the bounds of paddle.
+            if (this.x + this.width >= rightPaddle.x && 
+                this.x + this.width < rightPaddle.x + rightPaddle.width / 2 &&
+                this.y <= rightPaddle.y + rightPaddle.height &&
+                this.y + this.width >= rightPaddle.y) {
+                
+                if (this.y > rightPaddle.y + 20) { // Ball is at lower section.
+                    // Get a direction based on dist from center.
+                    this.vx = -2;
+                    this.vy = 5
+                } else if (this.y < rightPaddle.y + 10) { // Ball is at upper section.
+                    this.vx = -2;
+                    this.vy = -5
+                } else { // Ball is at middle section.
+                    this.vx = -2;
+                    this.vy = 0;
+                }
+            }
         }
     }
 
@@ -50,19 +90,24 @@ function ready() {
         constructor(x, y, controls) {
             this.x = x;
             this.y = y;
+            this.width = 5;
+            this.height = 30;
             this.controls = controls;
         }
         draw() {
             ctx.fillStyle = "#FFF";
-            ctx.fillRect(this.x, this.y, 5, 30);
+            ctx.fillRect(this.x, this.y, this.width, this.height);
         }
         update() {
+            // Update position.
             if (GAME_VARIABLES.inputKeys[this.controls.up]) {
                 this.y -= 10;
             }
             if (GAME_VARIABLES.inputKeys[this.controls.down]) {
                 this.y += 10;
             }
+
+            // Hold paddle from travelling beyond intended bounds.
             if (this.y >= canvas.height * 0.9) {
                 this.y = canvas.height * 0.9;
             } else if (this.y <= canvas.height * 0.05) {
@@ -81,6 +126,8 @@ function ready() {
         ball.update();
         paddle1.update();
         paddle2.update();
+        ball.collideLeft(paddle1);
+        ball.collideRight(paddle2);
 
         // Draw game entities.
         ball.draw();
