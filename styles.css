@@ -1,0 +1,13 @@
+body {
+    margin: 0;
+}
+
+.app {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.canvas {
+    background-color: #000;
+}
