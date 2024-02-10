@@ -23,12 +23,12 @@ function ready() {
     canvas.height = GAME_VARIABLES.canvasHeight;
 
     const ball = {
-        x: canvas.width / 2,
-        y: canvas.height / 2,
-        speed: 3,
+        x: canvas.width / 2 ,
+        y: canvas.height / 2 + 10,
+        speed: 14,
         direction: { x: -1, y: 0 },
         width: 5,
-        collideOn: true,
+        previous: { x: this.x, y: this.y},
         draw: function() {
             ctx.fillStyle = "#FFF";
             ctx.fillRect(this.x, this.y, this.width, this.width);
@@ -42,63 +42,87 @@ function ready() {
                 this.direction.y = -this.direction.y;
             }
 
+            // Save previous position.
+            this.previous.x = this.x;
+            this.previous.y = this.y;
+
             // Update position.
             this.x += this.speed * this.direction.x;
             this.y += this.speed * this.direction.y;
         },
         collideLeft: function(leftPaddle) {
-            if (!this.collideOn) return;
+            var surfaceOfPaddleX = leftPaddle.x + leftPaddle.width;
 
-            // If one point of ball exists within the bounds of paddle.
-            if (this.x <= leftPaddle.x + leftPaddle.width / 2 && 
-                this.x + this.width> leftPaddle.x &&
-                this.y <= leftPaddle.y + leftPaddle.height &&
-                this.y + this.width >= leftPaddle.y) {
-                
-                if (this.y > leftPaddle.y + 20) { // Ball is at lower section.
-                    var angle = GAME_VARIABLES.bounceAngleRadians * ((this.y + this.width / 2) - (leftPaddle.y + 20)) * 0.1;
-                    this.direction.x = Math.cos(angle);
-                    this.direction.y = Math.sin(angle);
-                } else if (this.y < leftPaddle.y + 10) { // Ball is at upper section.
-                    var angle = GAME_VARIABLES.bounceAngleRadians * ((leftPaddle.y + 10) - (this.y + this.width / 2)) * 0.1;
-                    this.direction.x = Math.cos(angle);
-                    this.direction.y = -Math.sin(angle);
-                } else { // Ball is at middle section.
-                    this.direction.x = 1;
-                    this.direction.y = 0;
+            // Is paddle between current & previous position.
+            if (this.x <= surfaceOfPaddleX && this.previous.x > surfaceOfPaddleX) {
+                var dydx = (this.y - this.previous.y) / (this.x - this.previous.x);
+                var c = this.y - dydx * this.x;
+                var y = dydx * surfaceOfPaddleX + c;
+
+                // Would ball have touched paddle when it was at the paddle's x-position.
+                if (y <= leftPaddle.y + leftPaddle.height && y + this.width >= leftPaddle.y) {
+
+                    // Adjust ball back to the surface of paddle.
+                    this.x = surfaceOfPaddleX + (surfaceOfPaddleX - (this.x + this.width));
+                    this.y = y;
+
+                    // Derive rebound angle.
+                    if (this.y > leftPaddle.y + 20) {
+                        // Ball is at lower section.
+                        var angle = GAME_VARIABLES.bounceAngleRadians * ((this.y + this.width / 2) - (leftPaddle.y + 20)) * 0.1;
+                        this.direction.x = Math.cos(angle);
+                        this.direction.y = Math.sin(angle);
+                    } else if (this.y < leftPaddle.y + 10) {
+                        // Ball is at upper section.
+                        var angle = GAME_VARIABLES.bounceAngleRadians * ((leftPaddle.y + 10) - (this.y + this.width / 2)) * 0.1;
+                        this.direction.x = Math.cos(angle);
+                        this.direction.y = -Math.sin(angle);
+                    } else {
+                        // Ball is at middle section.
+                        // Rebound at 90 degrees.
+                        this.direction.x = 1;
+                        this.direction.y = 0;
+                    }
                 }
-                this.collideSleep();
             }
         },
         collideRight: function(rightPaddle) {
-            if (!this.collideOn) return;
+            var surfaceOfPaddleX = rightPaddle.x;
+            var surfaceOfBallX = this.x + this.width; // Right face of ball.
+            var prevSurfaceOfBallX = this.previous.x + this.width;
 
-            // If one point of ball exists within the bounds of paddle.
-            if (this.x + this.width >= rightPaddle.x && 
-                this.x < rightPaddle.x + rightPaddle.width / 2 &&
-                this.y <= rightPaddle.y + rightPaddle.height &&
-                this.y + this.width >= rightPaddle.y) {
-                
-                if (this.y > rightPaddle.y + 20) { // Ball is at lower section.
-                    var angle = GAME_VARIABLES.bounceAngleRadians * ((this.y + this.width / 2) - (rightPaddle.y + 20)) * 0.1;
-                    this.direction.x = -Math.cos(angle);
-                    this.direction.y = Math.sin(angle);
-                } else if (this.y < rightPaddle.y + 10) { // Ball is at upper section.
-                    var angle = GAME_VARIABLES.bounceAngleRadians * ((rightPaddle.y + 10) - (this.y + this.width / 2)) * 0.1;
-                    this.direction.x = -Math.cos(angle);
-                    this.direction.y = -Math.sin(angle);
-                } else { // Ball is at middle section.
-                    this.direction.x = -1;
-                    this.direction.y = 0;
+            // Is paddle between current & previous position.
+            if (surfaceOfBallX >= surfaceOfPaddleX && prevSurfaceOfBallX < surfaceOfPaddleX) {
+                var dydx = (this.y - this.previous.y) / (surfaceOfBallX - prevSurfaceOfBallX);
+                var c = this.y - dydx * this.x;
+                var y = dydx * surfaceOfPaddleX + c;
+
+                // Would ball have touched paddle when it was at the paddle's x-position.
+                if (y <= rightPaddle.y + rightPaddle.height && y + this.width >= rightPaddle.y) {
+
+                    // Adjust ball position.
+                    this.x = surfaceOfPaddleX - (this.x - surfaceOfPaddleX) - this.width;
+                    this.y = y;
+
+                    // Derive rebound angle.
+                    if (this.y > rightPaddle.y + 20) {
+                        // Ball is at lower section.
+                        var angle = GAME_VARIABLES.bounceAngleRadians * ((this.y + this.width / 2) - (rightPaddle.y + 20)) * 0.1;
+                        this.direction.x = -Math.cos(angle);
+                        this.direction.y = Math.sin(angle);
+                    } else if (this.y < rightPaddle.y + 10) {
+                        // Ball is at upper section.
+                        var angle = GAME_VARIABLES.bounceAngleRadians * ((rightPaddle.y + 10) - (this.y + this.width / 2)) * 0.1;
+                        this.direction.x = -Math.cos(angle);
+                        this.direction.y = -Math.sin(angle);
+                    } else {
+                        // Ball is at middle section.
+                        // Rebound at 90 degrees.
+                        this.direction.x = -1;
+                        this.direction.y = 0;
+                    }
                 }
-                this.collideSleep();
             }
-        },
-        collideSleep: function() {
-            this.collideOn = false;
-            setTimeout(() => {
-                this.collideOn = true;
-            }, 1000);
         }
     }
 
