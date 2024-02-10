@@ -25,7 +25,7 @@ function ready() {
     const ball = {
         x: canvas.width / 2 ,
         y: canvas.height / 2 + 10,
-        speed: 14,
+        speed: 5,
         direction: { x: -1, y: 0 },
         width: 5,
         previous: { x: this.x, y: this.y},
