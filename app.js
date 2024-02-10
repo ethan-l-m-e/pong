@@ -3,7 +3,8 @@ const GAME_VARIABLES = {
     "canvasHeight": 600,
     inputKeys: [],
     p1Controls: { up: "w", down: "s" },
-    p2Controls: { up: "ArrowUp", down: "ArrowDown" }
+    p2Controls: { up: "ArrowUp", down: "ArrowDown" },
+    bounceAngleRadians: (Math.PI / 180) * 60
 }
 
 if (document.readyState == "loading") {
@@ -24,9 +25,10 @@ function ready() {
     const ball = {
         x: canvas.width / 2,
         y: canvas.height / 2,
-        vx: 2,
-        vy: 5,
+        speed: 3,
+        direction: { x: -1, y: 0 },
         width: 5,
+        collideOn: true,
         draw: function() {
             ctx.fillStyle = "#FFF";
             ctx.fillRect(this.x, this.y, this.width, this.width);
@@ -34,55 +36,69 @@ function ready() {
         update: function() {
             // Reverse directions at screen edges.
             if (this.x + this.width >= canvas.width || this.x <= 0) {
-                this.vx = -this.vx;
+                this.direction.x = -this.direction.x;
             }
             if (this.y + this.width >= canvas.height || this.y <= 0) {
-                this.vy = -this.vy;
+                this.direction.y = -this.direction.y;
             }
 
             // Update position.
-            this.x += this.vx;
-            this.y += this.vy;
+            this.x += this.speed * this.direction.x;
+            this.y += this.speed * this.direction.y;
         },
         collideLeft: function(leftPaddle) {
+            if (!this.collideOn) return;
+
             // If one point of ball exists within the bounds of paddle.
             if (this.x <= leftPaddle.x + leftPaddle.width / 2 && 
-                this.x > leftPaddle.x &&
+                this.x + this.width> leftPaddle.x &&
                 this.y <= leftPaddle.y + leftPaddle.height &&
                 this.y + this.width >= leftPaddle.y) {
                 
                 if (this.y > leftPaddle.y + 20) { // Ball is at lower section.
-                    // Get a direction based on dist from center.
-                    this.vx = 2;
-                    this.vy = 5
+                    var angle = GAME_VARIABLES.bounceAngleRadians * ((this.y + this.width / 2) - (leftPaddle.y + 20)) * 0.1;
+                    this.direction.x = Math.cos(angle);
+                    this.direction.y = Math.sin(angle);
                 } else if (this.y < leftPaddle.y + 10) { // Ball is at upper section.
-                    this.vx = 2;
-                    this.vy = -5
+                    var angle = GAME_VARIABLES.bounceAngleRadians * ((leftPaddle.y + 10) - (this.y + this.width / 2)) * 0.1;
+                    this.direction.x = Math.cos(angle);
+                    this.direction.y = -Math.sin(angle);
                 } else { // Ball is at middle section.
-                    this.vx = 2;
-                    this.vy = 0;
+                    this.direction.x = 1;
+                    this.direction.y = 0;
                 }
+                this.collideSleep();
             }
         },
         collideRight: function(rightPaddle) {
+            if (!this.collideOn) return;
+
             // If one point of ball exists within the bounds of paddle.
             if (this.x + this.width >= rightPaddle.x && 
-                this.x + this.width < rightPaddle.x + rightPaddle.width / 2 &&
+                this.x < rightPaddle.x + rightPaddle.width / 2 &&
                 this.y <= rightPaddle.y + rightPaddle.height &&
                 this.y + this.width >= rightPaddle.y) {
                 
                 if (this.y > rightPaddle.y + 20) { // Ball is at lower section.
-                    // Get a direction based on dist from center.
-                    this.vx = -2;
-                    this.vy = 5
+                    var angle = GAME_VARIABLES.bounceAngleRadians * ((this.y + this.width / 2) - (rightPaddle.y + 20)) * 0.1;
+                    this.direction.x = -Math.cos(angle);
+                    this.direction.y = Math.sin(angle);
                 } else if (this.y < rightPaddle.y + 10) { // Ball is at upper section.
-                    this.vx = -2;
-                    this.vy = -5
+                    var angle = GAME_VARIABLES.bounceAngleRadians * ((rightPaddle.y + 10) - (this.y + this.width / 2)) * 0.1;
+                    this.direction.x = -Math.cos(angle);
+                    this.direction.y = -Math.sin(angle);
                 } else { // Ball is at middle section.
-                    this.vx = -2;
-                    this.vy = 0;
+                    this.direction.x = -1;
+                    this.direction.y = 0;
                 }
+                this.collideSleep();
             }
+        },
+        collideSleep: function() {
+            this.collideOn = false;
+            setTimeout(() => {
+                this.collideOn = true;
+            }, 1000);
         }
     }
 
