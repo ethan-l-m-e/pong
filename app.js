@@ -66,15 +66,15 @@ function ready() {
                     this.x = surfaceOfPaddleX + (surfaceOfPaddleX - (this.x + this.width));
                     this.y = y;
 
-                    var lowerPaddleStart = leftPaddle.y + leftPaddle.sectionSize * 2;
-                    var upperPaddleStart = leftPaddle.y + leftPaddle.sectionSize;
+                    var lowerPaddleStart = leftPaddle.y + leftPaddle.sectionSize * 5;
+                    var upperPaddleStart = leftPaddle.y + leftPaddle.sectionSize * 3;
                     // Derive rebound angle.
-                    if (this.y > leftPaddle.y + leftPaddle.sectionSize * 2) {
+                    if (this.y > lowerPaddleStart) {
                         // Ball is at lower section.
                         var angle = this.getReboundAngle(this.y, lowerPaddleStart, leftPaddle.y + leftPaddle.height);
                         this.direction.x = Math.cos(angle);
                         this.direction.y = Math.sin(angle);
-                    } else if (this.y + this.width < leftPaddle.y + leftPaddle.sectionSize) {
+                    } else if (this.y + this.width < upperPaddleStart) {
                         // Ball is at upper section.
                         var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, leftPaddle.y);
                         this.direction.x = Math.cos(angle);
@@ -106,15 +106,15 @@ function ready() {
                     this.x = surfaceOfPaddleX - (this.x - surfaceOfPaddleX) - this.width;
                     this.y = y;
 
-                    var lowerPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 2;
-                    var upperPaddleStart = rightPaddle.y + rightPaddle.sectionSize;
+                    var lowerPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 5;
+                    var upperPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 3;
                     // Derive rebound angle.
-                    if (this.y > rightPaddle.y + rightPaddle.sectionSize * 2) {
+                    if (this.y > lowerPaddleStart) {
                         // Ball is at lower section.
                         var angle = this.getReboundAngle(this.y, lowerPaddleStart, rightPaddle.y + rightPaddle.height);
                         this.direction.x = -Math.cos(angle);
                         this.direction.y = Math.sin(angle);
-                    } else if (this.y + this.width < rightPaddle.y + rightPaddle.sectionSize) {
+                    } else if (this.y + this.width < upperPaddleStart) {
                         // Ball is at upper section.
                         var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, rightPaddle.y);
                         this.direction.x = -Math.cos(angle);
@@ -142,7 +142,7 @@ function ready() {
             this.y = y;
             this.width = 5;
             this.height = 30;
-            this.sectionSize = this.height / 3;
+            this.sectionSize = this.height / 8;
             this.controls = controls;
         }
         draw() {
@@ -231,19 +231,21 @@ function testReboundAngle(ball, paddle) {
         }
     }
 
-    assert("positive angle", ball.getReboundAngle(40, 50, 50 - paddle.sectionSize) > 0);
-    assert("max angle", ball.getReboundAngle(40, 50, 50 - paddle.sectionSize) <= GAME_VARIABLES.bounceAngleRadians);
-    assert("min angle", ball.getReboundAngle(50 + ball.width, 50, 50 - paddle.sectionSize) >= (Math.PI / 180) * 1);
+    var positionFar = paddle.sectionSize * 4; // Dist from center of paddle to the end.
 
-    var angleLowerSection = ball.getReboundAngle(315, 305, 305 + paddle.sectionSize);
+    assert("positive angle", ball.getReboundAngle(40, 50, 50 - positionFar) > 0);
+    assert("max angle", ball.getReboundAngle(50 - positionFar, 50, 50 - positionFar) <= GAME_VARIABLES.bounceAngleRadians);
+    assert("min angle", ball.getReboundAngle(50 + ball.width, 50, 50 + positionFar) >= (Math.PI / 180) * 1);
+
+    var angleLowerSection = ball.getReboundAngle(315, 305, 305 + positionFar);
     assert("lower section of paddle within bounds", angleLowerSection > 0 && angleLowerSection <= GAME_VARIABLES.bounceAngleRadians);
 
-    var angleUpperSection = ball.getReboundAngle(290, 300, 300 - paddle.sectionSize);
+    var angleUpperSection = ball.getReboundAngle(290, 300, 300 - positionFar);
     assert("upper section of paddle within bounds", angleUpperSection > 0 && angleUpperSection <= GAME_VARIABLES.bounceAngleRadians);
 
-    var angleBallOutOfBoundsLower = ball.getReboundAngle(311, 300, 300 + paddle.sectionSize);
-    assert("ball started out of bounds of upper section", angleBallOutOfBoundsLower > GAME_VARIABLES.bounceAngleRadians);
+    var angleBallOutOfBoundsLower = ball.getReboundAngle(300 + positionFar + 1, 300, 300 + positionFar);
+    assert("ball started out of bounds of lower section", angleBallOutOfBoundsLower > GAME_VARIABLES.bounceAngleRadians);
 
-    var angleBallOutOfBoundsUpper = ball.getReboundAngle(289, 300, 300 - paddle.sectionSize);
+    var angleBallOutOfBoundsUpper = ball.getReboundAngle(300 - positionFar - 1, 300, 300 - positionFar);
     assert("ball started out of bounds of upper section", angleBallOutOfBoundsUpper > GAME_VARIABLES.bounceAngleRadians);
 }
