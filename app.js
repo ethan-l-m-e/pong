@@ -1,6 +1,6 @@
 const GAME_VARIABLES = {
-    "canvasWidth": 800,
-    "canvasHeight": 600,
+    canvasWidth: 800,
+    canvasHeight: 600,
     inputKeys: [],
     p1Controls: { up: "w", down: "s" },
     p2Controls: { up: "ArrowUp", down: "ArrowDown" },
@@ -74,16 +74,20 @@ function ready() {
                         var angle = this.getReboundAngle(this.y, lowerPaddleStart, leftPaddle.y + leftPaddle.height);
                         this.direction.x = Math.cos(angle);
                         this.direction.y = Math.sin(angle);
+                        this.speed *= 1.1;
                     } else if (this.y + this.width < upperPaddleStart) {
                         // Ball is at upper section.
                         var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, leftPaddle.y);
                         this.direction.x = Math.cos(angle);
                         this.direction.y = -Math.sin(angle);
+                        this.speed *= 1.1;
                     } else {
                         // Ball is at middle section.
                         // Rebound at 90 degrees.
                         this.direction.x = 1;
                         this.direction.y = 0;
+                        this.speed *= 0.5;
+                        if (this.speed < 5) this.speed = 5;
                     }
                 }
             }
@@ -114,16 +118,20 @@ function ready() {
                         var angle = this.getReboundAngle(this.y, lowerPaddleStart, rightPaddle.y + rightPaddle.height);
                         this.direction.x = -Math.cos(angle);
                         this.direction.y = Math.sin(angle);
+                        this.speed *= 1.1;
                     } else if (this.y + this.width < upperPaddleStart) {
                         // Ball is at upper section.
                         var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, rightPaddle.y);
                         this.direction.x = -Math.cos(angle);
                         this.direction.y = -Math.sin(angle);
+                        this.speed *= 1.1;
                     } else {
                         // Ball is at middle section.
                         // Rebound at 90 degrees.
                         this.direction.x = -1;
                         this.direction.y = 0;
+                        this.speed *= 0.5;
+                        if (this.speed < 5) this.speed = 5;
                     }
                 }
             }
