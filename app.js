@@ -144,7 +144,7 @@ function ready() {
         }
     }
 
-    class paddle {
+    class Paddle {
         constructor(x, y, controls) {
             this.x = x;
             this.y = y;
@@ -175,8 +175,8 @@ function ready() {
         }
     }
 
-    var paddle1 = new paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
-    var paddle2 = new paddle(canvas.width * 0.8, canvas.height / 2, GAME_VARIABLES.p2Controls);
+    var paddle1 = new Paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
+    var paddle2 = new Paddle(canvas.width * 0.8, canvas.height / 2, GAME_VARIABLES.p2Controls);
 
     function gameLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -224,7 +224,7 @@ function ready() {
 
     // Run test cases.
     try {
-        testReboundAngle(ball, new paddle());
+        testReboundAngle(ball, new Paddle());
     } catch(e) {
         console.log(e);
     } finally {
