@@ -21,6 +21,233 @@ function ready() {
     canvas.style.height = GAME_VARIABLES.canvasHeight;
     canvas.width = GAME_VARIABLES.canvasWidth;
     canvas.height = GAME_VARIABLES.canvasHeight;
+    
+    class ScoreManager {
+        constructor() {
+            this.screenSize = { x: GAME_VARIABLES.canvasWidth, y: GAME_VARIABLES.canvasHeight };
+            this.playerScore = { p1: 6, p2: 11 };
+            this.spec = { // Specifications on size of digit to be drawn.
+                width: this.screenSize.x * .0375, 
+                height: this.screenSize.y * .11, 
+                thickness: this.screenSize.y * .11 / 9 
+            }
+            this.p1scorePosition = { x: this.screenSize.x * 0.31, y: this.screenSize.y * .05 };
+            this.p2scorePosition = { x: this.screenSize.x * 0.76, y: this.screenSize.y * .05 };
+            this.current = { x: 0, y: 0 }; // Will be set to p1 & p2 scorePositions when drawing.
+        }
+        drawScores() {
+            ctx.save();
+            ctx.fillStyle = "#CCC";
+
+            // Draw for both players.
+            this.current = this.p1scorePosition;
+            this.drawNumber(this.playerScore.p1);
+            this.current = this.p2scorePosition;
+            this.drawNumber(this.playerScore.p2);
+
+            ctx.restore();
+        }
+        drawNumber(number) {
+            switch (number) {
+                case 0:
+                    this.drawZero();
+                    break;
+                case 1:
+                    this.drawOne();
+                    break;
+                case 2:
+                    this.drawTwo();
+                    break;
+                case 3:
+                    this.drawThree();
+                    break;
+                case 4:
+                    this.drawFour();
+                    break;
+                case 5:
+                    this.drawFive();
+                    break;
+                case 6:
+                    this.drawSix();
+                    break;
+                case 7:
+                    this.drawSeven();
+                    break;
+                case 8:
+                    this.drawEight();
+                    break;
+                case 9:
+                    this.drawNine();
+                    break;
+                case 10:
+                    this.drawTen();
+                    break;
+                case 11:
+                    this.drawEleven();
+                    break;
+                default:
+                    // Do nothing.
+            }
+        }
+        /*
+        * Below are numbers to be drawn with helper functions.
+        */
+        drawZero() {
+            this.horizontalBarTop();
+            this.horizontalBarBottom();
+            this.verticalBarLeft();
+            this.verticalBarRight();
+        }
+        drawOne() {
+            this.verticalBarRight();
+        }
+        drawTwo() {
+            this.horizontalBarTop();
+            this.horizontalBarMiddle();
+            this.horizontalBarBottom();
+            this.verticalBarBottomLeft();
+            this.verticalBarTopRight();
+        }
+        drawThree() {
+            this.horizontalBarTop();
+            this.horizontalBarMiddle();
+            this.horizontalBarBottom();
+            this.verticalBarRight();
+        }
+        drawFour() {
+            this.verticalBarTopLeft();
+            this.verticalBarRight();
+            this.horizontalBarMiddle();
+        }
+        drawFive() {
+            this.horizontalBarTop();
+            this.horizontalBarMiddle();
+            this.horizontalBarBottom();
+            this.verticalBarTopLeft();
+            this.verticalBarBottomRight();
+        }
+        drawSix() {
+            this.verticalBarLeft();
+            this.horizontalBarMiddle();
+            this.horizontalBarBottom();
+            this.verticalBarBottomRight();
+        }
+        drawSeven() {
+            this.horizontalBarTop();
+            this.verticalBarRight();
+        }
+        drawEight() {
+            this.horizontalBarTop();
+            this.horizontalBarMiddle();
+            this.horizontalBarBottom();
+            this.verticalBarLeft();
+            this.verticalBarRight();
+        }
+        drawNine() {
+            this.verticalBarTopLeft();
+            this.horizontalBarTop();
+            this.horizontalBarMiddle();
+            this.verticalBarRight();
+        }
+        drawTen() {
+            this.drawZero();
+
+            // Number one on left side.
+            ctx.fillRect(
+                this.current.x - this.spec.width - this.spec.thickness, 
+                this.current.y, 
+                this.spec.thickness, 
+                this.spec.height);
+        }
+        drawEleven() {
+            this.drawOne();
+
+            // Number one on left side.
+            ctx.fillRect(
+                this.current.x - this.spec.width - this.spec.thickness, 
+                this.current.y, 
+                this.spec.thickness, 
+                this.spec.height);
+        }
+
+        /*
+        * Below are the helper functions to draw the score digits.
+        */
+        horizontalBarTop() {
+            ctx.fillRect(
+                this.current.x, 
+                this.current.y, 
+                this.spec.width, 
+                this.spec.thickness);
+        }
+        horizontalBarBottom() {
+            ctx.fillRect(
+                this.current.x, 
+                this.current.y + this.spec.height - this.spec.thickness, 
+                this.spec.width, 
+                this.spec.thickness);
+        }
+        horizontalBarMiddle() {
+            ctx.fillRect(
+                this.current.x, 
+                this.current.y + this.spec.height / 2 - this.spec.thickness, 
+                this.spec.width, 
+                this.spec.thickness);
+        }
+        verticalBarLeft() {
+            ctx.fillRect(
+                this.current.x, 
+                this.current.y, 
+                this.spec.thickness, 
+                this.spec.height);
+        }
+        verticalBarRight() {
+            ctx.fillRect(
+                this.current.x + this.spec.width - this.spec.thickness, 
+                this.current.y, 
+                this.spec.thickness, 
+                this.spec.height);
+        }
+        verticalBarTopLeft() {
+            ctx.fillRect(
+                this.current.x, 
+                this.current.y, 
+                this.spec.thickness, 
+                this.spec.height / 2);
+        }
+        verticalBarBottomLeft() {
+            ctx.fillRect(
+                this.current.x, 
+                this.current.y + this.spec.height / 2, 
+                this.spec.thickness, 
+                this.spec.height / 2);
+        }
+        verticalBarTopRight() {
+            ctx.fillRect(
+                this.current.x + this.spec.width - this.spec.thickness, 
+                this.current.y, 
+                this.spec.thickness, 
+                this.spec.height / 2);
+        }
+        verticalBarBottomRight() {
+            ctx.fillRect(
+                this.current.x + this.spec.width - this.spec.thickness, 
+                this.current.y + this.spec.height / 2, 
+                this.spec.thickness, 
+                this.spec.height / 2);
+        }
+    }
+
+    // Line dividing two players' sides.
+    function drawScreenDivider() {
+        ctx.beginPath();
+        ctx.moveTo(400, 0);
+        ctx.lineTo(400, 600);
+        ctx.strokeStyle = "#FFF";
+        ctx.setLineDash([8]);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    };
 
     const ball = {
         x: canvas.width / 2 ,
@@ -188,6 +415,7 @@ function ready() {
 
     var paddle1 = new Paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
     var paddle2 = new Paddle(canvas.width * 0.8, canvas.height / 2, GAME_VARIABLES.p2Controls);
+    var scoreBoard = new ScoreManager();
 
     function gameLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -200,6 +428,8 @@ function ready() {
         ball.collideRight(paddle2);
 
         // Draw game entities.
+        drawScreenDivider();
+        scoreBoard.drawScores();
         ball.draw();
         paddle1.draw();
         paddle2.draw();
