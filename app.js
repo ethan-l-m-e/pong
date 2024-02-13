@@ -150,6 +150,7 @@ function ready() {
             this.y = y;
             this.width = 5;
             this.height = 30;
+            this.speed = 2;
             this.sectionSize = this.height / 8;
             this.controls = controls;
         }
@@ -160,10 +161,20 @@ function ready() {
         update() {
             // Update position.
             if (GAME_VARIABLES.inputKeys[this.controls.up]) {
-                this.y -= 10;
+                this.y -= this.speed;
             }
             if (GAME_VARIABLES.inputKeys[this.controls.down]) {
-                this.y += 10;
+                this.y += this.speed;
+            }
+            
+            // Accelerate the paddle.
+            if (this.speed < 10) { this.speed += 1; }
+            else if (this.speed < 5 ) { this.speed += .12; }
+            if (this.speed >= 20) { this.speed = 20; } // Speed upper limit.
+
+            // Return to original speed when not pressing movement keys.
+            if (!GAME_VARIABLES.inputKeys[this.controls.up] && !GAME_VARIABLES.inputKeys[this.controls.down]) {
+                this.speed = 2;
             }
 
             // Hold paddle from travelling beyond intended bounds.
