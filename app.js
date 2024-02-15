@@ -253,6 +253,7 @@ function ready() {
         x: canvas.width / 2 ,
         y: canvas.height / 2 + 10,
         minSpeed: 4,
+        maxSpeed: 20,
         speed: 4,
         direction: { x: -1, y: 0 },
         width: canvas.height * .11 / 9,
@@ -276,16 +277,21 @@ function ready() {
             this.previous.x = this.x;
             this.previous.y = this.y;
 
+            // Check if ball is too fast or slow.
+            if (this.speed < this.minSpeed) this.speed = this.minSpeed;
+            if (this.speed > this.maxSpeed) this.speed = maxSpeed;
+
             // Update position.
             this.x += this.speed * this.direction.x;
             this.y += this.speed * this.direction.y;
         },
         collideLeft: function(leftPaddle) {
             var surfaceOfPaddleX = leftPaddle.x + leftPaddle.width;
+            var prevSurfaceOfBallX = this.previous.x + this.width; // Back face of previous position.
 
             // Is paddle between current & previous position.
-            if (this.x <= surfaceOfPaddleX && this.previous.x > surfaceOfPaddleX) {
-                var dydx = (this.y - this.previous.y) / (this.x - this.previous.x);
+            if (this.direction.x < 0 && this.x <= surfaceOfPaddleX && prevSurfaceOfBallX > surfaceOfPaddleX) {
+                var dydx = (this.y - this.previous.y) / (this.x - prevSurfaceOfBallX);
                 var c = this.y - dydx * this.x;
                 var y = dydx * surfaceOfPaddleX + c;
 
@@ -304,20 +310,19 @@ function ready() {
                         var angle = this.getReboundAngle(this.y, lowerPaddleStart, leftPaddle.y + leftPaddle.height);
                         this.direction.x = Math.cos(angle);
                         this.direction.y = Math.sin(angle);
-                        this.speed *= this.edgeMultiplier;
+                        this.speed *= this.edgeMultiplier + leftPaddle.speed / leftPaddle.maxSpeed;
                     } else if (this.y + this.width < upperPaddleStart) {
                         // Ball is at upper section.
                         var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, leftPaddle.y);
                         this.direction.x = Math.cos(angle);
                         this.direction.y = -Math.sin(angle);
-                        this.speed *= this.edgeMultiplier;
+                        this.speed *= this.edgeMultiplier + leftPaddle.speed / leftPaddle.maxSpeed;
                     } else {
                         // Ball is at middle section.
                         // Rebound at 90 degrees.
                         this.direction.x = 1;
                         this.direction.y = 0;
                         this.speed *= this.centerMultiplier;
-                        if (this.speed < this.minSpeed) this.speed = this.minSpeed;
                     }
                 }
             }
@@ -325,10 +330,10 @@ function ready() {
         collideRight: function(rightPaddle) {
             var surfaceOfPaddleX = rightPaddle.x;
             var surfaceOfBallX = this.x + this.width; // Right face of ball.
-            var prevSurfaceOfBallX = this.previous.x + this.width;
+            var prevSurfaceOfBallX = this.previous.x; // Back face of previous position.
 
             // Is paddle between current & previous position.
-            if (surfaceOfBallX >= surfaceOfPaddleX && prevSurfaceOfBallX < surfaceOfPaddleX) {
+            if (this.direction.x > 0 && surfaceOfBallX >= surfaceOfPaddleX && prevSurfaceOfBallX < surfaceOfPaddleX) {
                 var dydx = (this.y - this.previous.y) / (surfaceOfBallX - prevSurfaceOfBallX);
                 var c = this.y - dydx * this.x;
                 var y = dydx * surfaceOfPaddleX + c;
@@ -339,6 +344,7 @@ function ready() {
                     // Adjust ball position.
                     this.x = surfaceOfPaddleX - (this.x - surfaceOfPaddleX) - this.width;
                     this.y = y;
+                    console.log(this.x)
 
                     var lowerPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 5;
                     var upperPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 3;
@@ -348,20 +354,19 @@ function ready() {
                         var angle = this.getReboundAngle(this.y, lowerPaddleStart, rightPaddle.y + rightPaddle.height);
                         this.direction.x = -Math.cos(angle);
                         this.direction.y = Math.sin(angle);
-                        this.speed *= this.edgeMultiplier;
+                        this.speed *= this.edgeMultiplier + rightPaddle.speed / rightPaddle.maxSpeed;
                     } else if (this.y + this.width < upperPaddleStart) {
                         // Ball is at upper section.
                         var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, rightPaddle.y);
                         this.direction.x = -Math.cos(angle);
                         this.direction.y = -Math.sin(angle);
-                        this.speed *= this.edgeMultiplier;
+                        this.speed *= this.edgeMultiplier + rightPaddle.speed / rightPaddle.maxSpeed;
                     } else {
                         // Ball is at middle section.
                         // Rebound at 90 degrees.
                         this.direction.x = -1;
                         this.direction.y = 0;
                         this.speed *= this.centerMultiplier;
-                        if (this.speed < this.minSpeed) this.speed = this.minSpeed;
                     }
                 }
             }
