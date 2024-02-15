@@ -4,7 +4,7 @@ const GAME_VARIABLES = {
     inputKeys: [],
     p1Controls: { up: "w", down: "s" },
     p2Controls: { up: "ArrowUp", down: "ArrowDown" },
-    bounceAngleRadians: (Math.PI / 180) * 60
+    bounceAngleRadians: (Math.PI / 180) * 45 // Max rebound angle.
 }
 
 if (document.readyState == "loading") {
@@ -294,7 +294,7 @@ function ready() {
         x: canvas.width / 2 ,
         y: canvas.height / 2 + 10,
         minSpeed: 4,
-        maxSpeed: 20,
+        maxSpeed: 10,
         speed: 4,
         direction: { x: -1, y: 0 },
         width: canvas.height * .11 / 9,
@@ -320,7 +320,7 @@ function ready() {
 
             // Check if ball is too fast or slow.
             if (this.speed < this.minSpeed) this.speed = this.minSpeed;
-            if (this.speed > this.maxSpeed) this.speed = maxSpeed;
+            if (this.speed > this.maxSpeed) this.speed = this.maxSpeed;
 
             // Update position.
             this.x += this.speed * this.direction.x;
@@ -346,15 +346,15 @@ function ready() {
                     var lowerPaddleStart = leftPaddle.y + leftPaddle.sectionSize * 5;
                     var upperPaddleStart = leftPaddle.y + leftPaddle.sectionSize * 3;
                     // Derive rebound angle.
-                    if (this.y > lowerPaddleStart) {
+                    if (this.y + this.width / 2 > lowerPaddleStart) {
                         // Ball is at lower section.
-                        var angle = this.getReboundAngle(this.y, lowerPaddleStart, leftPaddle.y + leftPaddle.height);
+                        var angle = this.getReboundAngle(this.y + this.width / 2, lowerPaddleStart, leftPaddle.y + leftPaddle.height);
                         this.direction.x = Math.cos(angle);
                         this.direction.y = Math.sin(angle);
                         this.speed *= this.edgeMultiplier + leftPaddle.speed / leftPaddle.maxSpeed;
-                    } else if (this.y + this.width < upperPaddleStart) {
+                    } else if (this.y + this.width / 2 < upperPaddleStart) {
                         // Ball is at upper section.
-                        var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, leftPaddle.y);
+                        var angle = this.getReboundAngle(this.y + this.width / 2, upperPaddleStart, leftPaddle.y);
                         this.direction.x = Math.cos(angle);
                         this.direction.y = -Math.sin(angle);
                         this.speed *= this.edgeMultiplier + leftPaddle.speed / leftPaddle.maxSpeed;
@@ -389,15 +389,15 @@ function ready() {
                     var lowerPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 5;
                     var upperPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 3;
                     // Derive rebound angle.
-                    if (this.y > lowerPaddleStart) {
+                    if (this.y + this.width / 2 > lowerPaddleStart) {
                         // Ball is at lower section.
-                        var angle = this.getReboundAngle(this.y, lowerPaddleStart, rightPaddle.y + rightPaddle.height);
+                        var angle = this.getReboundAngle(this.y + this.width / 2, lowerPaddleStart, rightPaddle.y + rightPaddle.height);
                         this.direction.x = -Math.cos(angle);
                         this.direction.y = Math.sin(angle);
                         this.speed *= this.edgeMultiplier + rightPaddle.speed / rightPaddle.maxSpeed;
-                    } else if (this.y + this.width < upperPaddleStart) {
+                    } else if (this.y + this.width / 2 < upperPaddleStart) {
                         // Ball is at upper section.
-                        var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, rightPaddle.y);
+                        var angle = this.getReboundAngle(this.y + this.width / 2, upperPaddleStart, rightPaddle.y);
                         this.direction.x = -Math.cos(angle);
                         this.direction.y = -Math.sin(angle);
                         this.speed *= this.edgeMultiplier + rightPaddle.speed / rightPaddle.maxSpeed;
