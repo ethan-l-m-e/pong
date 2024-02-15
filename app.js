@@ -344,7 +344,6 @@ function ready() {
                     // Adjust ball position.
                     this.x = surfaceOfPaddleX - (this.x - surfaceOfPaddleX) - this.width;
                     this.y = y;
-                    console.log(this.x)
 
                     var lowerPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 5;
                     var upperPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 3;
