@@ -252,10 +252,13 @@ function ready() {
     const ball = {
         x: canvas.width / 2 ,
         y: canvas.height / 2 + 10,
-        speed: 5,
+        minSpeed: 4,
+        speed: 4,
         direction: { x: -1, y: 0 },
-        width: 5,
+        width: canvas.height * .11 / 9,
         previous: { x: this.x, y: this.y},
+        edgeMultiplier: 1.1,
+        centerMultiplier: .6,
         draw: function() {
             ctx.fillStyle = "#FFF";
             ctx.fillRect(this.x, this.y, this.width, this.width);
@@ -301,20 +304,20 @@ function ready() {
                         var angle = this.getReboundAngle(this.y, lowerPaddleStart, leftPaddle.y + leftPaddle.height);
                         this.direction.x = Math.cos(angle);
                         this.direction.y = Math.sin(angle);
-                        this.speed *= 1.1;
+                        this.speed *= this.edgeMultiplier;
                     } else if (this.y + this.width < upperPaddleStart) {
                         // Ball is at upper section.
                         var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, leftPaddle.y);
                         this.direction.x = Math.cos(angle);
                         this.direction.y = -Math.sin(angle);
-                        this.speed *= 1.1;
+                        this.speed *= this.edgeMultiplier;
                     } else {
                         // Ball is at middle section.
                         // Rebound at 90 degrees.
                         this.direction.x = 1;
                         this.direction.y = 0;
-                        this.speed *= 0.5;
-                        if (this.speed < 5) this.speed = 5;
+                        this.speed *= this.centerMultiplier;
+                        if (this.speed < this.minSpeed) this.speed = this.minSpeed;
                     }
                 }
             }
@@ -345,20 +348,20 @@ function ready() {
                         var angle = this.getReboundAngle(this.y, lowerPaddleStart, rightPaddle.y + rightPaddle.height);
                         this.direction.x = -Math.cos(angle);
                         this.direction.y = Math.sin(angle);
-                        this.speed *= 1.1;
+                        this.speed *= this.edgeMultiplier;
                     } else if (this.y + this.width < upperPaddleStart) {
                         // Ball is at upper section.
                         var angle = this.getReboundAngle(this.y + this.width, upperPaddleStart, rightPaddle.y);
                         this.direction.x = -Math.cos(angle);
                         this.direction.y = -Math.sin(angle);
-                        this.speed *= 1.1;
+                        this.speed *= this.edgeMultiplier;
                     } else {
                         // Ball is at middle section.
                         // Rebound at 90 degrees.
                         this.direction.x = -1;
                         this.direction.y = 0;
-                        this.speed *= 0.5;
-                        if (this.speed < 5) this.speed = 5;
+                        this.speed *= this.centerMultiplier;
+                        if (this.speed < this.minSpeed) this.speed = this.minSpeed;
                     }
                 }
             }
@@ -375,9 +378,11 @@ function ready() {
         constructor(x, y, controls) {
             this.x = x;
             this.y = y;
-            this.width = 5;
+            this.width = canvas.height * .11 / 9;
             this.height = 30;
             this.speed = 2;
+            this.maxSpeed = 20;
+            this.minSpeed = 2;
             this.sectionSize = this.height / 8;
             this.controls = controls;
         }
@@ -397,11 +402,11 @@ function ready() {
             // Accelerate the paddle.
             if (this.speed < 10) { this.speed += 1; }
             else if (this.speed < 5 ) { this.speed += .12; }
-            if (this.speed >= 20) { this.speed = 20; } // Speed upper limit.
+            if (this.speed >= this.maxSpeed) { this.speed = this.maxSpeed; }
 
             // Return to original speed when not pressing movement keys.
             if (!GAME_VARIABLES.inputKeys[this.controls.up] && !GAME_VARIABLES.inputKeys[this.controls.down]) {
-                this.speed = 2;
+                this.speed = this.minSpeed;
             }
 
             // Hold paddle from travelling beyond intended bounds.
