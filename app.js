@@ -21,6 +21,58 @@ function ready() {
     canvas.style.height = GAME_VARIABLES.canvasHeight;
     canvas.width = GAME_VARIABLES.canvasWidth;
     canvas.height = GAME_VARIABLES.canvasHeight;
+
+    class ArenaManager {
+        constructor(ball, paddle1, paddle2, scoreBoard) {
+            this.ball = ball;
+            this.paddle1 = paddle1;
+            this.paddle2 = paddle2;
+            this.scoreBoard = scoreBoard;
+            this.goalSize = { width: canvas.width * .1, height: canvas.height }
+        }
+        updateArena() {
+            ball.update();
+            paddle1.update();
+            paddle2.update();
+            ball.collideLeft(paddle1);
+            ball.collideRight(paddle2);
+            this.checkScored();
+        }
+        drawArena() {
+            ball.draw();
+            paddle1.draw();
+            paddle2.draw();
+            this.drawScreenDivider();
+            scoreBoard.drawScores();
+            this.drawGoals();
+        }
+        // Line dividing two players' sides.
+        drawScreenDivider() {
+            ctx.beginPath();
+            ctx.moveTo(400, 0);
+            ctx.lineTo(400, 600);
+            ctx.strokeStyle = "#FFF";
+            ctx.setLineDash([8]);
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        };
+        // Scoring area behind each player.
+        drawGoals() {
+            ctx.fillStyle = "#000"
+            ctx.fillRect(0, 0, this.goalSize.width, this.goalSize.height);
+            ctx.fillRect(canvas.width - this.goalSize.width, 0, this.goalSize.width, this.goalSize.height);
+        }
+        // Check for player scoring a point.
+        checkScored() {
+            if (this.ball.x <= 0) {
+                console.log("Player 2 scored.");
+            }
+            if (this.ball.x + this.ball.width >= canvas.width) {
+                console.log("Player 1 scored.")
+            }
+            // TODO: update scoreboard and game state, spawn/despawn ball.
+        }
+    }
     
     class ScoreManager {
         constructor() {
@@ -238,17 +290,6 @@ function ready() {
         }
     }
 
-    // Line dividing two players' sides.
-    function drawScreenDivider() {
-        ctx.beginPath();
-        ctx.moveTo(400, 0);
-        ctx.lineTo(400, 600);
-        ctx.strokeStyle = "#FFF";
-        ctx.setLineDash([8]);
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-    };
-
     const ball = {
         x: canvas.width / 2 ,
         y: canvas.height / 2 + 10,
@@ -425,23 +466,16 @@ function ready() {
     var paddle1 = new Paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
     var paddle2 = new Paddle(canvas.width * 0.8, canvas.height / 2, GAME_VARIABLES.p2Controls);
     var scoreBoard = new ScoreManager();
+    var arena = new ArenaManager(ball, paddle1, paddle2, scoreBoard);
 
     function gameLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Update game entities.
-        ball.update();
-        paddle1.update();
-        paddle2.update();
-        ball.collideLeft(paddle1);
-        ball.collideRight(paddle2);
+        arena.updateArena();
 
         // Draw game entities.
-        drawScreenDivider();
-        scoreBoard.drawScores();
-        ball.draw();
-        paddle1.draw();
-        paddle2.draw();
+        arena.drawArena();
 
         // Call the next frame.
         loopId = requestAnimationFrame(gameLoop);
