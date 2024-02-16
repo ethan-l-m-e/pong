@@ -4,7 +4,8 @@ const GAME_VARIABLES = {
     inputKeys: [],
     p1Controls: { up: "w", down: "s" },
     p2Controls: { up: "ArrowUp", down: "ArrowDown" },
-    bounceAngleRadians: (Math.PI / 180) * 45 // Max rebound angle.
+    bounceAngleRadians: (Math.PI / 180) * 45, // Max rebound angle.
+    gameState: { "PREPARATION": 0, "PLAYING": 1, "GAMEOVER": 2 }
 }
 
 if (document.readyState == "loading") {
@@ -28,20 +29,40 @@ function ready() {
             this.paddle1 = paddle1;
             this.paddle2 = paddle2;
             this.scoreBoard = scoreBoard;
-            this.goalSize = { width: canvas.width * .1, height: canvas.height }
+            this.goalSize = { width: canvas.width * .1, height: canvas.height };
+            this.nextBallDirection = 1;
+            this.gameState = GAME_VARIABLES.gameState.PREPARATION;
         }
         updateArena() {
-            ball.update();
-            paddle1.update();
-            paddle2.update();
-            ball.collideLeft(paddle1);
-            ball.collideRight(paddle2);
-            this.checkScored();
+            if (this.gameState === GAME_VARIABLES.gameState.PLAYING) {
+                paddle1.update();
+                paddle2.update();
+                ball.update();
+                ball.collideLeft(paddle1);
+                ball.collideRight(paddle2);
+                this.checkScored();
+            }
+            if (this.gameState === GAME_VARIABLES.gameState.PREPARATION) {
+                paddle1.update();
+                paddle2.update();
+            }
+            if (this.gameState === GAME_VARIABLES.gameState.GAMEOVER) {
+                ball.update();
+            }
         }
         drawArena() {
-            ball.draw();
-            paddle1.draw();
-            paddle2.draw();
+            if (this.gameState === GAME_VARIABLES.gameState.PLAYING) {
+                ball.draw();
+                paddle1.draw();
+                paddle2.draw();
+            }
+            if (this.gameState === GAME_VARIABLES.gameState.PREPARATION) {
+                paddle1.draw();
+                paddle2.draw();
+            }
+            if (this.gameState === GAME_VARIABLES.gameState.GAMEOVER) {
+                ball.draw();
+            }
             this.drawScreenDivider();
             scoreBoard.drawScores();
             this.drawGoals();
@@ -64,20 +85,71 @@ function ready() {
         }
         // Check for player scoring a point.
         checkScored() {
-            if (this.ball.x <= 0) {
-                console.log("Player 2 scored.");
+            var scoredLeft = (this.ball.x <= 0);
+            var scoredRight = (this.ball.x + this.ball.width >= canvas.width);
+            if (scoredLeft || scoredRight) {
+                this.gameState = GAME_VARIABLES.gameState.PREPARATION;
+                if (scoredLeft) { 
+                    this.scoreBoard.incrementPlayerTwo();
+                    this.nextBallDirection = -1;
+                }
+                if (scoredRight) { 
+                    this.scoreBoard.incrementPlayerOne();
+                    this.nextBallDirection = 1;
+                }
+                if (this.scoreBoard.getHighestScore() >= 11) {
+                    this.gameOver();
+                } else {
+                    this.spawnBall();
+                }
             }
-            if (this.ball.x + this.ball.width >= canvas.width) {
-                console.log("Player 1 scored.")
+        }
+        gameStart() {
+            this.gameState = GAME_VARIABLES.gameState.PREPARATION;
+            this.scoreBoard.resetScore();
+            this.paddle1.reset();
+            this.paddle2.reset();
+            this.spawnBall();
+        }
+        spawnBall() {
+            setTimeout(() => {
+                var position = { 
+                    x: canvas.width / 2,
+                    y: (Math.random() * canvas.height * .8) + canvas.height * .1
+                }
+                var angle = Math.random() * GAME_VARIABLES.bounceAngleRadians;
+                var negativeOrPositive = Math.random() < 0.5 ? -1 : 1;
+                var direction = { 
+                    x: Math.cos(angle) * this.nextBallDirection,
+                    y: Math.sin(angle) * negativeOrPositive
+                }
+                this.ball.spawn(position, direction, this.ball.minSpeed);
+                this.gameState = GAME_VARIABLES.gameState.PLAYING;
+            }, 2000);
+        }
+        gameOver() {
+            this.gameState = GAME_VARIABLES.gameState.GAMEOVER;
+            var position = { 
+                x: canvas.width * .38,
+                y: this.ball.width
             }
-            // TODO: update scoreboard and game state, spawn/despawn ball.
+            var angle = 60 * Math.PI / 180;
+            var direction = { 
+                x: Math.cos(angle),
+                y: Math.sin(angle) * -1
+            }
+            this.ball.spawn(position, direction, 8);
+
+            setTimeout(() => {
+                this.gameStart();
+            }, 5000);
         }
     }
     
     class ScoreManager {
         constructor() {
             this.screenSize = { x: GAME_VARIABLES.canvasWidth, y: GAME_VARIABLES.canvasHeight };
-            this.playerScore = { p1: 6, p2: 11 };
+            this.playerScore = { p1: 0, p2: 0 };
             this.spec = { // Specifications on size of digit to be drawn.
                 width: this.screenSize.x * .0375, 
                 height: this.screenSize.y * .11, 
@@ -140,6 +212,19 @@ function ready() {
                 default:
                     // Do nothing.
             }
+        }
+        incrementPlayerOne() {
+            this.playerScore.p1++;
+        }
+        incrementPlayerTwo() {
+            this.playerScore.p2++;
+        }
+        resetScore() {
+            this.playerScore.p1 = 0;
+            this.playerScore.p2 = 0;
+        }
+        getHighestScore() {
+            return Math.max(this.playerScore.p1, this.playerScore.p2);
         }
         /*
         * Below are numbers to be drawn with helper functions.
@@ -297,7 +382,7 @@ function ready() {
         maxSpeed: 10,
         speed: 4,
         direction: { x: -1, y: 0 },
-        width: canvas.height * .11 / 9,
+        width: canvas.height * .11 / 10,
         previous: { x: this.x, y: this.y},
         edgeMultiplier: 1.1,
         centerMultiplier: .6,
@@ -416,11 +501,21 @@ function ready() {
             var paddleRegion = Math.abs(paddleEnd - paddleStart);
             var percentOfAngle = ballDistance / paddleRegion;
             return GAME_VARIABLES.bounceAngleRadians * percentOfAngle;
+        },
+        spawn: function(position, direction, speed) {
+            this.x = position.x;
+            this.y = position.y;
+            this.speed = speed;
+            this.direction.x = direction.x;
+            this.direction.y = direction.y
+            this.active = true;
         }
     }
 
     class Paddle {
         constructor(x, y, controls) {
+            this.initialX = x;
+            this.initialY = y;
             this.x = x;
             this.y = y;
             this.width = canvas.height * .11 / 9;
@@ -461,6 +556,10 @@ function ready() {
                 this.y = canvas.height * 0.05;
             };
         }
+        reset() {
+            this.x = this.initialX;
+            this.y = this.initialY;
+        }
     }
 
     var paddle1 = new Paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
@@ -482,6 +581,7 @@ function ready() {
     }
 
     // Game entry point.
+    arena.gameOver();
     var loopId = requestAnimationFrame(gameLoop);
 
     // Player inputs.
