@@ -112,18 +112,27 @@ function ready() {
             this.spawnBall();
         }
         spawnBall() {
+            // Possible starting positions and angles.
+            const startPositionsY = [
+                canvas.height * .1,
+                canvas.height * .2,
+                canvas.height * .8,
+                canvas.height * .9];
+            const startAngles = [0, 80, 80, 80].map((x) => {
+                return x * Math.PI / 180; // Convert to radians.
+            });
             setTimeout(() => {
                 var position = { 
-                    x: canvas.width / 2,
-                    y: (Math.random() * canvas.height * .8) + canvas.height * .1
+                    x: canvas.width / 2 - this.nextBallDirection * 20, // Slightly behind the line divider
+                    y: startPositionsY[Math.floor(Math.random() * startPositionsY.length)]
                 }
-                var angle = Math.random() * GAME_VARIABLES.bounceAngleRadians;
+                var angle = startAngles[Math.floor(Math.random() * startAngles.length)];
                 var negativeOrPositive = Math.random() < 0.5 ? -1 : 1;
                 var direction = { 
                     x: Math.cos(angle) * this.nextBallDirection,
                     y: Math.sin(angle) * negativeOrPositive
                 }
-                this.ball.spawn(position, direction, this.ball.minSpeed);
+                this.ball.spawn(position, direction, ball.minSpeed);
                 this.gameState = GAME_VARIABLES.gameState.PLAYING;
             }, 2000);
         }
