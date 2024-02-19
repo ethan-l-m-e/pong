@@ -380,6 +380,7 @@ function ready() {
         y: canvas.height / 2 + 10,
         minSpeed: 4,
         maxSpeed: 10,
+        fixedHorizontalSpeed: 4,
         speed: 4,
         direction: { x: -1, y: 0 },
         width: canvas.height * .11 / 10,
@@ -408,7 +409,9 @@ function ready() {
             if (this.speed > this.maxSpeed) this.speed = this.maxSpeed;
 
             // Update position.
-            this.x += this.speed * this.direction.x;
+            const adjustSpeedRatio = Math.abs( // Ratio to adjust for constant horizontal speed.
+                this.fixedHorizontalSpeed / (this.speed * this.direction.x)); 
+            this.x += this.speed * this.direction.x * adjustSpeedRatio;
             this.y += this.speed * this.direction.y;
         },
         collideLeft: function(leftPaddle) {
