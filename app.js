@@ -576,7 +576,27 @@ function ready() {
         }
     }
 
-    var ball = new Ball();
+    // New ball type: whale.
+    class Whale extends Ball {
+        constructor() {
+            super();
+            this.width = 64;
+            this.spriteLeft = new Image();
+            this.spriteRight = new Image();
+            this.spriteLeft.src = "./graphics/blue-whale-left.png";
+            this.spriteRight.src = "./graphics/blue-whale-right.png";
+        }
+        // Override draw.
+        draw() {
+            if (this.direction.x >= 0) {
+                ctx.drawImage(this.spriteRight, 0, 0, 64, 64, this.x, this.y, this.width, this.width);
+            } else {
+                ctx.drawImage(this.spriteLeft, 576, 0, 64, 64, this.x, this.y, this.width, this.width);
+            }
+        }
+    }
+
+    var ball = new Whale();
     var paddle1 = new Paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
     var paddle2 = new Paddle(canvas.width * 0.8, canvas.height / 2, GAME_VARIABLES.p2Controls);
     var scoreBoard = new ScoreManager();
