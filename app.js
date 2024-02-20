@@ -439,7 +439,7 @@ function ready() {
                 if (y <= leftPaddle.y + leftPaddle.height && y + this.width >= leftPaddle.y) {
 
                     // Adjust ball back to the surface of paddle.
-                    this.x = surfaceOfPaddleX + (surfaceOfPaddleX - (this.x + this.width));
+                    this.x = surfaceOfPaddleX + (surfaceOfPaddleX - this.x);
                     this.y = y;
 
                     var lowerPaddleStart = leftPaddle.y + leftPaddle.sectionSize * 5;
@@ -482,7 +482,7 @@ function ready() {
                 if (y <= rightPaddle.y + rightPaddle.height && y + this.width >= rightPaddle.y) {
 
                     // Adjust ball position.
-                    this.x = surfaceOfPaddleX - (this.x - surfaceOfPaddleX) - this.width;
+                    this.x = surfaceOfPaddleX - (surfaceOfBallX - surfaceOfPaddleX) - this.width;
                     this.y = y;
 
                     var lowerPaddleStart = rightPaddle.y + rightPaddle.sectionSize * 5;
