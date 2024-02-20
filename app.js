@@ -404,10 +404,18 @@ function ready() {
         }
         update() {
             // Reverse directions at screen edges.
-            if (this.x + this.width >= canvas.width || this.x <= 0) {
+            const passedLeftBound = (this.x < 0);
+            const passedRightBound = (this.x + this.width >= canvas.width);
+            const passedUpperBound = (this.y < 0);
+            const passedLowerBound = (this.y + this.width >= canvas.height);
+            if (passedLeftBound || passedRightBound) {
+                if (passedLeftBound) { this.x = 0; }
+                if (passedRightBound) { this.x = canvas.width - this.width; }
                 this.direction.x = -this.direction.x;
             }
-            if (this.y + this.width >= canvas.height || this.y <= 0) {
+            if (passedUpperBound || passedLowerBound) {
+                if (passedUpperBound) { this.y = 0; }
+                if (passedLowerBound) { this.y = canvas.height - this.width; }
                 this.direction.y = -this.direction.y;
             }
 
