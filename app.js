@@ -384,23 +384,25 @@ function ready() {
         }
     }
 
-    const ball = {
-        x: canvas.width / 2 ,
-        y: canvas.height / 2 + 10,
-        minSpeed: 4,
-        maxSpeed: 10,
-        fixedHorizontalSpeed: 4,
-        speed: 4,
-        direction: { x: -1, y: 0 },
-        width: canvas.height * .11 / 10,
-        previous: { x: this.x, y: this.y},
-        edgeMultiplier: 1.1,
-        centerMultiplier: .6,
-        draw: function() {
+    class Ball {
+        constructor() {
+            this.x = canvas.width / 2;
+            this.y = canvas.height / 2 + 10;
+            this.minSpeed = 4;
+            this.maxSpeed = 10;
+            this.fixedHorizontalSpeed = 4;
+            this.speed = 4;
+            this.direction = { x: -1, y: 0 };
+            this.width = canvas.height * .11 / 10;
+            this.previous = { x: this.x, y: this.y};
+            this.edgeMultiplier = 1.1;
+            this.centerMultiplier = .6;
+        }
+        draw() {
             ctx.fillStyle = "#FFF";
             ctx.fillRect(this.x, this.y, this.width, this.width);
-        },
-        update: function() {
+        }
+        update() {
             // Reverse directions at screen edges.
             if (this.x + this.width >= canvas.width || this.x <= 0) {
                 this.direction.x = -this.direction.x;
@@ -422,8 +424,8 @@ function ready() {
                 this.fixedHorizontalSpeed / (this.speed * this.direction.x)); 
             this.x += this.speed * this.direction.x * adjustSpeedRatio;
             this.y += this.speed * this.direction.y;
-        },
-        collideLeft: function(leftPaddle) {
+        }
+        collideLeft(leftPaddle) {
             var surfaceOfPaddleX = leftPaddle.x + leftPaddle.width;
             var prevSurfaceOfBallX = this.previous.x + this.width; // Back face of previous position.
 
@@ -464,8 +466,8 @@ function ready() {
                     }
                 }
             }
-        },
-        collideRight: function(rightPaddle) {
+        }
+        collideRight(rightPaddle) {
             var surfaceOfPaddleX = rightPaddle.x;
             var surfaceOfBallX = this.x + this.width; // Right face of ball.
             var prevSurfaceOfBallX = this.previous.x; // Back face of previous position.
@@ -507,14 +509,14 @@ function ready() {
                     }
                 }
             }
-        },
-        getReboundAngle: function(ballStart, paddleStart, paddleEnd) {
+        }
+        getReboundAngle(ballStart, paddleStart, paddleEnd) {
             var ballDistance = Math.abs(paddleStart - ballStart);
             var paddleRegion = Math.abs(paddleEnd - paddleStart);
             var percentOfAngle = ballDistance / paddleRegion;
             return GAME_VARIABLES.bounceAngleRadians * percentOfAngle;
-        },
-        spawn: function(position, direction, speed) {
+        }
+        spawn(position, direction, speed) {
             this.x = position.x;
             this.y = position.y;
             this.speed = speed;
@@ -574,6 +576,7 @@ function ready() {
         }
     }
 
+    var ball = new Ball();
     var paddle1 = new Paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
     var paddle2 = new Paddle(canvas.width * 0.8, canvas.height / 2, GAME_VARIABLES.p2Controls);
     var scoreBoard = new ScoreManager();
