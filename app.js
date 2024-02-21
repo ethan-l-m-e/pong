@@ -5,7 +5,7 @@ const GAME_VARIABLES = {
     p1Controls: { up: "w", down: "s" },
     p2Controls: { up: "ArrowUp", down: "ArrowDown" },
     bounceAngleRadians: (Math.PI / 180) * 45, // Max rebound angle.
-    gameState: { "PREPARATION": 0, "PLAYING": 1, "GAMEOVER": 2 }
+    gameState: { "MENU": 0, "PREPARATION": 1, "PLAYING": 2, "GAMEOVER": 3 }
 }
 
 if (document.readyState == "loading") {
