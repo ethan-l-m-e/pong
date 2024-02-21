@@ -5,7 +5,8 @@ const GAME_VARIABLES = {
     p1Controls: { up: "w", down: "s" },
     p2Controls: { up: "ArrowUp", down: "ArrowDown" },
     bounceAngleRadians: (Math.PI / 180) * 45, // Max rebound angle.
-    gameState: { "MENU": 0, "PREPARATION": 1, "PLAYING": 2, "GAMEOVER": 3 }
+    gameState: { "PREPARATION": 1, "PLAYING": 2, "GAMEOVER": 3 },
+    gameScreen: { "MENU": 0, "GAME": 1 }
 }
 
 if (document.readyState == "loading") {
@@ -23,7 +24,68 @@ function ready() {
     canvas.width = GAME_VARIABLES.canvasWidth;
     canvas.height = GAME_VARIABLES.canvasHeight;
 
-    class ArenaManager {
+    class ScreenManager {
+        constructor(menuScreen, gameScreen) {
+            this.screens = [];
+            this.screens[GAME_VARIABLES.gameScreen.MENU] = menuScreen;
+            this.screens[GAME_VARIABLES.gameScreen.GAME] = gameScreen;
+            this.gameScreen = GAME_VARIABLES.gameScreen.MENU;
+            for (var i = 0; i < arguments.length; i++) {
+                arguments[i].manager = this;
+            }
+        }
+        update() {
+            this.screens[this.gameScreen].update();
+        }
+        draw() {
+            this.screens[this.gameScreen].draw();
+        }
+        getCurrentScreen() {
+            return this.screens[this.gameScreen];
+        }
+        requestScreen(gameScreen) {
+            this.gameScreen = gameScreen;
+            this.getCurrentScreen().begin();
+        }
+    }
+
+    class MenuScreen {
+        constructor() {
+            
+        }
+        update() {
+
+        }
+        draw() {
+            ctx.save();
+            ctx.font = "30px Courier";
+            ctx.fillStyle = "#FFF";
+            ctx.textAlign = "center";
+            ctx.fillText("Play", canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+        }
+        begin() {
+            return;
+        }
+        handleMouseClick(position) {
+            ctx.font = "30px Courier";
+            var metrics = ctx.measureText("Play");
+            var textWidth = metrics.width;
+            var textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+            var buttonRect = {
+                x: canvas.width / 2 - textWidth / 2,
+                y: canvas.height / 2 - textHeight / 2,
+                width: textWidth,
+                height: textHeight
+            }
+            if (Util.isInside(position, buttonRect)) {
+                // Start the game.
+                this.manager.requestScreen(GAME_VARIABLES.gameScreen.GAME);
+            }
+        }
+    }
+
+    class GameScreen {
         constructor(ball, paddle1, paddle2, scoreBoard) {
             this.ball = ball;
             this.paddle1 = paddle1;
@@ -31,9 +93,9 @@ function ready() {
             this.scoreBoard = scoreBoard;
             this.goalSize = { width: canvas.width * .1, height: canvas.height };
             this.nextBallDirection = 1;
-            this.gameState = GAME_VARIABLES.gameState.PREPARATION;
+            this.gameState = GAME_VARIABLES.gameState.PREPARATION; // The gameState specifies what things to update and draw.
         }
-        updateArena() {
+        update() {
             if (this.gameState === GAME_VARIABLES.gameState.PLAYING) {
                 paddle1.update();
                 paddle2.update();
@@ -50,7 +112,7 @@ function ready() {
                 ball.update();
             }
         }
-        drawArena() {
+        draw() {
             if (this.gameState === GAME_VARIABLES.gameState.PLAYING) {
                 ball.draw();
                 paddle1.draw();
@@ -98,7 +160,7 @@ function ready() {
                     this.nextBallDirection = 1;
                 }
                 if (this.scoreBoard.getHighestScore() >= 11) {
-                    this.gameOver();
+                    this.postGame();
                 } else {
                     this.spawnBall();
                 }
@@ -136,7 +198,7 @@ function ready() {
                 this.gameState = GAME_VARIABLES.gameState.PLAYING;
             }, 2000);
         }
-        gameOver() {
+        preGame() {
             this.gameState = GAME_VARIABLES.gameState.GAMEOVER;
             var position = { 
                 x: canvas.width * .38,
@@ -152,6 +214,29 @@ function ready() {
             setTimeout(() => {
                 this.gameStart();
             }, 5000);
+        }
+        postGame() {
+            this.gameState = GAME_VARIABLES.gameState.GAMEOVER;
+            var position = { 
+                x: canvas.width * .38,
+                y: this.ball.width
+            }
+            var angle = 60 * Math.PI / 180;
+            var direction = { 
+                x: Math.cos(angle),
+                y: Math.sin(angle) * -1
+            }
+            this.ball.spawn(position, direction, 8);
+
+            setTimeout(() => {
+                this.manager.requestScreen(GAME_VARIABLES.gameScreen.MENU);
+            }, 5000);
+        }
+        begin() {
+            this.preGame();
+        }
+        handleMouseClick(position) {
+            return;
         }
     }
     
@@ -608,23 +693,24 @@ function ready() {
     var paddle1 = new Paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
     var paddle2 = new Paddle(canvas.width * 0.8, canvas.height / 2, GAME_VARIABLES.p2Controls);
     var scoreBoard = new ScoreManager();
-    var arena = new ArenaManager(ball, paddle1, paddle2, scoreBoard);
+    var gameScreen = new GameScreen(ball, paddle1, paddle2, scoreBoard);
+    var menuScreen = new MenuScreen();
+    var screenManager = new ScreenManager(menuScreen, gameScreen);
 
     function gameLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Update game entities.
-        arena.updateArena();
+        screenManager.draw();
 
         // Draw game entities.
-        arena.drawArena();
+        screenManager.update();
 
         // Call the next frame.
         loopId = requestAnimationFrame(gameLoop);
     }
 
     // Game entry point.
-    arena.gameOver();
     var loopId = requestAnimationFrame(gameLoop);
 
     // Player inputs.
@@ -648,6 +734,32 @@ function ready() {
                 break;
         }
     });
+    canvas.addEventListener("click", (e) => {
+        e.preventDefault();
+        var pos = Util.getMousePos(canvas, e);
+        screenManager
+            .getCurrentScreen()
+            .handleMouseClick(pos);
+    });
+
+    const Util = {
+        getMousePos: function(canvas, event) {
+            var rect = canvas.getBoundingClientRect();
+            return {
+                x: event.clientX - rect.x,
+                y: event.clientY - rect.y
+            };
+        },
+        isInside: function(pos, rect) {
+            if (pos.x >= rect.x && 
+                pos.x <= rect.x + rect.width &&
+                pos.y >= rect.y &&
+                pos.y <= rect.y + rect.height) {
+                    return true;
+                }
+            return false;
+        }
+    }
 
     // Run test cases.
     try {
