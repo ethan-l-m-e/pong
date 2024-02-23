@@ -109,7 +109,6 @@ function ready() {
     class MenuScreen extends Screen {
         constructor() {
             super();
-            this.menuButtons = [];
             var that = this;
             var playButton = new Button(
                 "Play",
