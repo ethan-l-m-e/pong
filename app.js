@@ -8,7 +8,11 @@ const GAME_VARIABLES = {
     bounceAngleRadians: (Math.PI / 180) * 45, // Max rebound angle.
     gameState: { "PREPARATION": 1, "PLAYING": 2, "GAMEOVER": 3, "CONTINUE": 4, "PAUSED": 5 },
     gameScreen: { "MENU": 0, "MODESELECT": 1, "GAME": 2 },
-    gameMode: null
+    gameMode: null,
+    audioReboundWall: new Audio("./sounds/rebound-wall.wav"),
+    audioReboundPaddle: new Audio("./sounds/rebound-paddle.wav"),
+    audioScored: new Audio("./sounds/scored.wav"),
+    canPlayAudio: false
 }
 
 if (document.readyState == "loading") {
@@ -26,6 +30,10 @@ function ready() {
     canvas.width = GAME_VARIABLES.canvasWidth;
     canvas.height = GAME_VARIABLES.canvasHeight;
     
+    function playAudio(audio) {
+        if (GAME_VARIABLES.canPlayAudio) audio.play();
+    }
+
     class Modes {
         constructor() {
             this.modeList = [];
@@ -418,7 +426,7 @@ function ready() {
             var scoredLeft = (this.ball.x <= 0);
             var scoredRight = (this.ball.x + this.ball.width >= canvas.width);
             if (scoredLeft || scoredRight) {
-                
+                playAudio(GAME_VARIABLES.audioScored);
                 if (scoredLeft) { 
                     this.scoreBoard.incrementPlayerTwo();
                     this.nextBallDirection = -1;
@@ -428,6 +436,7 @@ function ready() {
                     this.nextBallDirection = 1;
                 }
                 if (this.scoreBoard.getHighestScore() >= 11) {
+                    GAME_VARIABLES.canPlayAudio = false; // Audio should be disabled before post game.
                     this.postGame();
                 } else {
                     this.gameState = GAME_VARIABLES.gameState.PREPARATION;
@@ -467,6 +476,7 @@ function ready() {
             this.scoreBoard.resetScore();
             this.paddle1.reset();
             this.paddle2.reset();
+            GAME_VARIABLES.canPlayAudio = true;
         }
         spawnBall() {
             // Possible starting positions and angles.
@@ -521,7 +531,6 @@ function ready() {
                 y: Math.sin(angle) * -1
             }
             this.ball.spawn(position, direction, 8);
-
             setTimeout(() => {
                 this.gameState = GAME_VARIABLES.gameState.CONTINUE;
             }, 5000);
@@ -795,11 +804,13 @@ function ready() {
                 if (passedLeftBound) { this.x = 0; }
                 if (passedRightBound) { this.x = canvas.width - this.width; }
                 this.direction.x = -this.direction.x;
+                playAudio(GAME_VARIABLES.audioReboundWall);
             }
             if (passedUpperBound || passedLowerBound) {
                 if (passedUpperBound) { this.y = 0; }
                 if (passedLowerBound) { this.y = canvas.height - this.width; }
                 this.direction.y = -this.direction.y;
+                playAudio(GAME_VARIABLES.audioReboundWall);
             }
 
             // Save previous position.
@@ -855,6 +866,8 @@ function ready() {
                         this.direction.y = 0;
                         this.speed *= this.centerMultiplier;
                     }
+
+                    if (GAME_VARIABLES.canPlayAudio) GAME_VARIABLES.audioReboundPaddle.play();
                 }
             }
         }
@@ -898,6 +911,8 @@ function ready() {
                         this.direction.y = 0;
                         this.speed *= this.centerMultiplier;
                     }
+
+                    if (GAME_VARIABLES.canPlayAudio) GAME_VARIABLES.audioReboundPaddle.play();
                 }
             }
         }
