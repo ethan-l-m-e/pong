@@ -6,7 +6,8 @@ const GAME_VARIABLES = {
     p2Controls: { up: "ArrowUp", down: "ArrowDown" },
     bounceAngleRadians: (Math.PI / 180) * 45, // Max rebound angle.
     gameState: { "PREPARATION": 1, "PLAYING": 2, "GAMEOVER": 3, "CONTINUE": 4 },
-    gameScreen: { "MENU": 0, "GAME": 1 },
+    gameScreen: { "MENU": 0, "MODESELECT": 1, "GAME": 2 },
+    gameMode: null
 }
 
 if (document.readyState == "loading") {
@@ -23,39 +24,58 @@ function ready() {
     canvas.style.height = GAME_VARIABLES.canvasHeight;
     canvas.width = GAME_VARIABLES.canvasWidth;
     canvas.height = GAME_VARIABLES.canvasHeight;
+    
+    class Modes {
+        constructor() {
+            this.modeList = [];
+            this.currentMode = 0;
+        }
+        addMode(name, ball, description) {
+            this.modeList.push({
+                name: name,
+                ball: ball,
+                description: description
+            });
+        }
+        getMode() {
+            if (this.modeList.length == 0) {
+                throw new Error("No modes defined.");
+            }
+            var mode = this.modeList[this.currentMode];
+            return {
+                name: mode.name,
+                ball: mode.ball,
+                description: mode.description
+            }
+        }
+        next() {
+            const len = this.modeList.length;
+            this.currentMode = (this.currentMode + 1) % len;
+        }
+        prev() {
+            const len = this.modeList.length;
+            this.currentMode--;
+            if (this.currentMode < 0) {
+                this.currentMode = len - 1;
+            }
+        }
+    }
 
     class Button {
-        constructor(text, font, x, y, clickFunc) {
-            this.text = text;
-            this.font = font;
+        constructor(x, y, width, height, clickFunc) {
             this.x = x;
             this.y = y;
+            this.width = width;
+            this.height = height;
             this.clickFunc = clickFunc;
-
-            ctx.save();
-            ctx.font = font;
-            var metrics = ctx.measureText(text);
-            this.textWidth = metrics.width;
-            this.textHeight = 
-                metrics.actualBoundingBoxAscent +
-                metrics.actualBoundingBoxDescent;
-            ctx.restore();
         }
         getRect() {
             return {
-                x: this.x - this.textWidth / 2,
-                y: this.y - this.textHeight / 2,
-                width: this.textWidth,
-                height: this.textHeight
+                x: this.x,
+                y: this.y,
+                width: this.width,
+                height: this.height
             }
-        }
-        draw() {
-            ctx.save();
-            ctx.font = this.font;
-            ctx.fillStyle = "#FFF";
-            ctx.textAlign = "center";
-            ctx.fillText(this.text, this.x, this.y);
-            ctx.restore();
         }
         isTargeted(position) {
             return Util.isInside(position, this.getRect());
@@ -65,15 +85,67 @@ function ready() {
         }
     }
 
-    class ScreenManager {
-        constructor(menuScreen, gameScreen) {
-            this.screens = [];
-            this.screens[GAME_VARIABLES.gameScreen.MENU] = menuScreen;
-            this.screens[GAME_VARIABLES.gameScreen.GAME] = gameScreen;
-            this.gameScreen = GAME_VARIABLES.gameScreen.MENU;
-            for (var i = 0; i < arguments.length; i++) {
-                arguments[i].manager = this;
+    class TextButton extends Button {
+        constructor(text, font, x, y, clickFunc) {
+            ctx.save();
+            ctx.font = font;
+            var metrics = ctx.measureText(text);
+            var width = metrics.width;
+            var height = 
+                metrics.actualBoundingBoxAscent +
+                metrics.actualBoundingBoxDescent;
+            ctx.restore();
+            super(x, y, width, height, clickFunc);
+            this.text = text;
+            this.font = font;
+        }
+        draw() {
+            ctx.save();
+            ctx.font = this.font;
+            ctx.fillStyle = "#FFF";
+            ctx.textAlign = "center";
+            ctx.fillText(this.text, this.x, this.y);
+            ctx.restore();
+        }
+        getRect() {
+            return {
+                x: this.x - this.width / 2,
+                y: this.y - this.height / 2,
+                width: this.width,
+                height: this.height
             }
+        }
+    }
+
+    class ArrowButton extends Button {
+        constructor(x, y, width, height, direction, clickFunc) {
+            super(x, y, width, height, clickFunc);
+            this.direction = direction;
+        }
+        draw() {
+            var beginX = this.x;
+            var endX = this.x + this.width;
+            if (this.direction == "left") {
+                beginX = this.x + this.width;
+                endX = this.x;
+            } 
+            ctx.save();
+            ctx.strokeStyle = "#FFF";
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.moveTo(beginX, this.y);
+            ctx.lineTo(beginX, this.y + this.height);
+            ctx.lineTo(endX, this.y + this.height / 2);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    class ScreenManager {
+        constructor() {
+            this.screens = [];
+            this.gameScreen = GAME_VARIABLES.gameScreen.MENU;
         }
         update() {
             this.screens[this.gameScreen].update();
@@ -88,11 +160,21 @@ function ready() {
             this.gameScreen = gameScreen;
             this.getCurrentScreen().begin();
         }
+        addScreen(id, screen) {
+            this.screens[id] = screen;
+            screen.manager = this;
+        }
     }
 
     class Screen {
         constructor() {
             this.buttons = [];
+        }
+        update() {
+            return;
+        }
+        draw() {
+            this.drawButtons();
         }
         drawButtons() {
             this.buttons.forEach((button) => {
@@ -104,36 +186,106 @@ function ready() {
                 if (button.isTargeted(position)) button.doClickFunc();
             });
         }
+        begin() {
+            return;
+        }
     }
 
     class MenuScreen extends Screen {
         constructor() {
             super();
             var that = this;
-            var playButton = new Button(
+            var playButton = new TextButton(
                 "Play",
                 "30px Courier", 
                 canvas.width / 2, 
                 canvas.height / 2,
-                function() { that.manager.requestScreen(GAME_VARIABLES.gameScreen.GAME) }
+                function() { that.manager.requestScreen(GAME_VARIABLES.gameScreen.MODESELECT) }
                 );
             this.buttons.push(playButton);
         }
-        update() {
+    }
 
+    class ModeSelectScreen extends Screen {
+        constructor() {
+            super();
+            var that = this;
+            var startGameButton = new TextButton(
+                "Start game",
+                "24px Courier", 
+                canvas.width / 2, 
+                canvas.height * .8,
+                function() { that.manager.requestScreen(GAME_VARIABLES.gameScreen.GAME) }
+            );
+            var backButton = new TextButton(
+                "Back",
+                "20px Courier", 
+                canvas.width / 2, 
+                canvas.height * .9,
+                function() { that.manager.requestScreen(GAME_VARIABLES.gameScreen.MENU) }
+            );
+            var selectLeftButton = new ArrowButton(
+                canvas.width * .3,
+                230,
+                20,
+                40,
+                "left",
+                function() {
+                    GAME_VARIABLES.gameMode.prev();
+                }
+            );
+            var selectRightButton = new ArrowButton(
+                canvas.width * .7 - 20,
+                230,
+                20,
+                40,
+                "right",
+                function() {
+                    GAME_VARIABLES.gameMode.next();
+                }
+            );
+            this.buttons.push(startGameButton);
+            this.buttons.push(backButton);
+            this.buttons.push(selectLeftButton);
+            this.buttons.push(selectRightButton);
+            // TODO: Add text description for selected mode.
         }
         draw() {
-            this.drawButtons();
+            super.draw(); // Buttons drawn here.
+            this.drawSelectionTile();
+            this.drawMode();
         }
-        begin() {
-            return;
+        drawSelectionTile() {
+            ctx.save();
+            ctx.strokeStyle = "#FFF";
+            ctx.beginPath();
+            ctx.moveTo(350, 200);
+            ctx.lineTo(450, 200);
+            ctx.lineTo(450, 300);
+            ctx.lineTo(350, 300);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+        }
+        drawMode() {
+            const modeInfo = GAME_VARIABLES.gameMode.getMode();
+            var name = modeInfo.name;
+            var ball = modeInfo.ball;
+            var description = modeInfo.description;
+            ball.drawCenteredAt(400, 250);
+            ctx.fillStyle = "#FFF";
+            ctx.textAlign = "center";
+            ctx.font = "20px Courier";
+            ctx.fillText(name, 400, 320);
+            ctx.font = "16px Courier";
+            ctx.fillText(description, 400, 360);
         }
     }
 
     class GameScreen extends Screen {
-        constructor(ball, paddle1, paddle2, scoreBoard) {
+        constructor(paddle1, paddle2, scoreBoard) {
             super();
-            this.ball = ball;
+            this.ball = null;
             this.paddle1 = paddle1;
             this.paddle2 = paddle2;
             this.scoreBoard = scoreBoard;
@@ -143,14 +295,14 @@ function ready() {
 
             // Setup buttons.
             var that = this; // Reference for buttons to target this screen.
-            var playAgainButton = new Button(
+            var playAgainButton = new TextButton(
                 "Play again", 
                 "30px Courier", 
                 canvas.width / 2, 
                 canvas.height / 2,
                 function () { that.preGame(); }
                 );
-            var returnToMenuButton = new Button(
+            var returnToMenuButton = new TextButton(
                 "Main menu", 
                 "30px Courier", 
                 canvas.width / 2, 
@@ -164,19 +316,19 @@ function ready() {
         }
         update() {
             if (this.gameState === GAME_VARIABLES.gameState.PLAYING) {
-                paddle1.update();
-                paddle2.update();
-                ball.update();
-                ball.collideLeft(paddle1);
-                ball.collideRight(paddle2);
+                this.paddle1.update();
+                this.paddle2.update();
+                this.ball.update();
+                this.ball.collideLeft(paddle1);
+                this.ball.collideRight(paddle2);
                 this.checkScored();
             }
             if (this.gameState === GAME_VARIABLES.gameState.PREPARATION) {
-                paddle1.update();
-                paddle2.update();
+                this.paddle1.update();
+                this.paddle2.update();
             }
             if (this.gameState === GAME_VARIABLES.gameState.GAMEOVER) {
-                ball.update();
+                this.ball.update();
             }
             if (this.gameState === GAME_VARIABLES.gameState.CONTINUE) {
                 // Do not update.
@@ -184,24 +336,24 @@ function ready() {
         }
         draw() {
             if (this.gameState === GAME_VARIABLES.gameState.PLAYING) {
-                ball.draw();
-                paddle1.draw();
-                paddle2.draw();
+                this.ball.draw();
+                this.paddle1.draw();
+                this.paddle2.draw();
             }
             if (this.gameState === GAME_VARIABLES.gameState.PREPARATION) {
-                paddle1.draw();
-                paddle2.draw();
+                this.paddle1.draw();
+                this.paddle2.draw();
             }
             if (this.gameState === GAME_VARIABLES.gameState.GAMEOVER) {
-                ball.draw();
+                this.ball.draw();
             }
             if (this.gameState === GAME_VARIABLES.gameState.CONTINUE) {
-                ball.draw();
-                paddle1.draw();
-                paddle2.draw();
+                this.ball.draw();
+                this.paddle1.draw();
+                this.paddle2.draw();
             }
             this.drawScreenDivider();
-            scoreBoard.drawScores();
+            this.scoreBoard.drawScores();
             this.drawGoals();
             if (this.gameState === GAME_VARIABLES.gameState.CONTINUE) {
                 // Draw these parts on top of rest of the game.
@@ -282,7 +434,7 @@ function ready() {
                     x: Math.cos(angle) * this.nextBallDirection,
                     y: Math.sin(angle) * negativeOrPositive
                 }
-                this.ball.spawn(position, direction, ball.minSpeed);
+                this.ball.spawn(position, direction, this.ball.minSpeed);
                 this.gameState = GAME_VARIABLES.gameState.PLAYING;
             }, 2000);
         }
@@ -321,6 +473,8 @@ function ready() {
             }, 5000);
         }
         begin() {
+            // Set the correct ball based on current mode.
+            this.ball = GAME_VARIABLES.gameMode.getMode().ball;
             this.preGame();
         }
     }
@@ -572,6 +726,11 @@ function ready() {
             ctx.fillStyle = "#FFF";
             ctx.fillRect(this.x, this.y, this.width, this.width);
         }
+        drawCenteredAt(x, y) {
+            this.x = x - this.width / 2;
+            this.y = y - this.width / 2;
+            this.draw();
+        }
         update() {
             // Reverse directions at screen edges.
             const passedLeftBound = (this.x < 0);
@@ -774,13 +933,21 @@ function ready() {
         }
     }
 
-    var ball = new Whale();
+    var modes = new Modes();
+    modes.addMode("Classic", new Ball(), "No add-ons.");
+    modes.addMode("Whale", new Whale(), "It does not like to be stopped.");
+    GAME_VARIABLES.gameMode = modes;
     var paddle1 = new Paddle(canvas.width * 0.2, canvas.height / 2, GAME_VARIABLES.p1Controls);
     var paddle2 = new Paddle(canvas.width * 0.8, canvas.height / 2, GAME_VARIABLES.p2Controls);
     var scoreBoard = new ScoreManager();
-    var gameScreen = new GameScreen(ball, paddle1, paddle2, scoreBoard);
+    var gameScreen = new GameScreen(paddle1, paddle2, scoreBoard);
     var menuScreen = new MenuScreen();
-    var screenManager = new ScreenManager(menuScreen, gameScreen);
+    var modeSelectScreen = new ModeSelectScreen();
+    var screenManager = new ScreenManager();
+    screenManager.addScreen(GAME_VARIABLES.gameScreen.MENU, menuScreen);
+    screenManager.addScreen(GAME_VARIABLES.gameScreen.MODESELECT, modeSelectScreen);
+    screenManager.addScreen(GAME_VARIABLES.gameScreen.GAME, gameScreen);
+    screenManager.requestScreen(GAME_VARIABLES.gameScreen.MENU);
 
     function gameLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -848,7 +1015,7 @@ function ready() {
 
     // Run test cases.
     try {
-        testReboundAngle(ball, new Paddle());
+        testReboundAngle(new Ball(), new Paddle());
     } catch(e) {
         console.log(e);
     } finally {
