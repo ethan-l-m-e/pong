@@ -7,7 +7,7 @@ const GAME_VARIABLES = {
     sharedControls: { pause: " " },
     bounceAngleRadians: (Math.PI / 180) * 45, // Max rebound angle.
     gameState: { "PREPARATION": 1, "PLAYING": 2, "GAMEOVER": 3, "CONTINUE": 4, "PAUSED": 5 },
-    gameScreen: { "MENU": 0, "MODESELECT": 1, "GAME": 2 },
+    gameScreen: { "MENU": 0, "MODESELECT": 1, "GAME": 2, "CREDITS": 3 },
     gameMode: null,
     audioReboundWall: new Audio("./sounds/rebound-wall.wav"),
     audioReboundPaddle: new Audio("./sounds/rebound-paddle.wav"),
@@ -211,7 +211,74 @@ function ready() {
                 canvas.height / 2,
                 function() { that.manager.requestScreen(GAME_VARIABLES.gameScreen.MODESELECT) }
                 );
+            var creditsButton = new TextButton(
+                "Credits",
+                "30px Courier", 
+                canvas.width / 2, 
+                playButton.y + playButton.height * 2,
+                function() { that.manager.requestScreen(GAME_VARIABLES.gameScreen.CREDITS) }
+            )
             this.buttons.push(playButton);
+            this.buttons.push(creditsButton);
+        }
+    }
+
+    class CreditsScreen extends Screen {
+        constructor() {
+            super();
+            var that = this;
+            var backButton = new TextButton(
+                "Back",
+                "20px Courier", 
+                canvas.width / 2, 
+                canvas.height * .9,
+                function() { that.manager.requestScreen(GAME_VARIABLES.gameScreen.MENU) }
+            );
+            this.buttons.push(backButton);
+            this.whale = new Whale();
+        }
+        draw() {
+            super.draw();
+            this.drawCredits();
+        }
+        drawCredits() {
+            ctx.save();
+            ctx.fillStyle = "#FFF"
+            ctx.textAlign = "center";
+            ctx.font = "30px Courier";
+            // Title.
+            ctx.fillText("Credits", canvas.width / 2, canvas.height * .1);
+            this.whale.drawCenteredAt(canvas.width / 2, canvas.height * .22);
+            ctx.font = "24px Courier";
+            var fontSize = 24;
+            // Art.
+            ctx.fillText(
+                "\"Blue Whale\" by RAPIDPUNCHES",
+                canvas.width / 2,
+                canvas.height * .3);
+            ctx.fillText(
+                "licensed CC BY-SA 4.0, CC BY-SA 3.0:",
+                canvas.width / 2,
+                canvas.height * .3 + fontSize);
+            ctx.fillText(
+                "https://opengameart.org/content/blue-whale",
+                canvas.width / 2,
+                canvas.height * .3 + fontSize * 2);
+
+            // Sound.
+            ctx.fillText(
+                "\"Pro Sound Collection (v1.3)\" by GameMaster Audio:",
+                canvas.width / 2,
+                canvas.height * .5);
+            ctx.fillText(
+                "https://www.gamemasteraudio.com/product/",
+                canvas.width / 2,
+                canvas.height * .5 + fontSize);
+            ctx.fillText(
+                "pro-sound-collection/",
+                canvas.width / 2,
+                canvas.height * .5 + fontSize * 2);
+            ctx.restore();
         }
     }
 
@@ -1011,9 +1078,11 @@ function ready() {
     var scoreBoard = new ScoreManager();
     var gameScreen = new GameScreen(paddle1, paddle2, scoreBoard);
     var menuScreen = new MenuScreen();
+    var creditsScreen = new CreditsScreen();
     var modeSelectScreen = new ModeSelectScreen();
     var screenManager = new ScreenManager();
     screenManager.addScreen(GAME_VARIABLES.gameScreen.MENU, menuScreen);
+    screenManager.addScreen(GAME_VARIABLES.gameScreen.CREDITS, creditsScreen);
     screenManager.addScreen(GAME_VARIABLES.gameScreen.MODESELECT, modeSelectScreen);
     screenManager.addScreen(GAME_VARIABLES.gameScreen.GAME, gameScreen);
     screenManager.requestScreen(GAME_VARIABLES.gameScreen.MENU);
