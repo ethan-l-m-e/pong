@@ -865,9 +865,9 @@ function ready() {
         update(dt) {
             // Reverse directions at screen edges.
             const passedLeftBound = (this.x < 0);
-            const passedRightBound = (this.x + this.width >= canvas.width);
+            const passedRightBound = (this.x + this.width > canvas.width);
             const passedUpperBound = (this.y < 0);
-            const passedLowerBound = (this.y + this.width >= canvas.height);
+            const passedLowerBound = (this.y + this.width > canvas.height);
             if (passedLeftBound || passedRightBound) {
                 if (passedLeftBound) { this.x = 0; }
                 if (passedRightBound) { this.x = canvas.width - this.width; }
