@@ -307,7 +307,7 @@ function ready() {
                 "30px Courier", 
                 canvas.width / 2, 
                 playAgainButton.y 
-                    + playAgainButton.textHeight * 2,
+                    + playAgainButton.height * 2,
                 function() { that.manager.requestScreen(GAME_VARIABLES.gameScreen.MENU); }
                 );
             // Store buttons.
