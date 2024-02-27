@@ -4,8 +4,9 @@ const GAME_VARIABLES = {
     inputKeys: [],
     p1Controls: { up: "w", down: "s" },
     p2Controls: { up: "ArrowUp", down: "ArrowDown" },
+    sharedControls: { pause: " " },
     bounceAngleRadians: (Math.PI / 180) * 45, // Max rebound angle.
-    gameState: { "PREPARATION": 1, "PLAYING": 2, "GAMEOVER": 3, "CONTINUE": 4 },
+    gameState: { "PREPARATION": 1, "PLAYING": 2, "GAMEOVER": 3, "CONTINUE": 4, "PAUSED": 5 },
     gameScreen: { "MENU": 0, "MODESELECT": 1, "GAME": 2 },
     gameMode: null
 }
@@ -147,8 +148,8 @@ function ready() {
             this.screens = [];
             this.gameScreen = GAME_VARIABLES.gameScreen.MENU;
         }
-        update() {
-            this.screens[this.gameScreen].update();
+        update(dt) {
+            this.screens[this.gameScreen].update(dt);
         }
         draw() {
             this.screens[this.gameScreen].draw();
@@ -292,6 +293,9 @@ function ready() {
             this.goalSize = { width: canvas.width * .1, height: canvas.height };
             this.nextBallDirection = 1;
             this.gameState = GAME_VARIABLES.gameState.PREPARATION; // The gameState specifies what things to update and draw.
+            this.returnState = null;
+            this.acceptPause = true;
+            this.timer = 0;
 
             // Setup buttons.
             var that = this; // Reference for buttons to target this screen.
@@ -314,7 +318,7 @@ function ready() {
             this.buttons.push(playAgainButton);
             this.buttons.push(returnToMenuButton);
         }
-        update() {
+        update(dt) {
             if (this.gameState === GAME_VARIABLES.gameState.PLAYING) {
                 this.paddle1.update();
                 this.paddle2.update();
@@ -322,10 +326,16 @@ function ready() {
                 this.ball.collideLeft(paddle1);
                 this.ball.collideRight(paddle2);
                 this.checkScored();
+                this.checkPaused();
+            }
+            if (this.gameState === GAME_VARIABLES.gameState.PAUSED) {
+                this.checkPaused();
             }
             if (this.gameState === GAME_VARIABLES.gameState.PREPARATION) {
                 this.paddle1.update();
                 this.paddle2.update();
+                this.checkPaused();
+                this.prepareNext(dt);
             }
             if (this.gameState === GAME_VARIABLES.gameState.GAMEOVER) {
                 this.ball.update();
@@ -339,6 +349,13 @@ function ready() {
                 this.ball.draw();
                 this.paddle1.draw();
                 this.paddle2.draw();
+            }
+            if (this.gameState === GAME_VARIABLES.gameState.PAUSED) {
+                this.ball.draw();
+                this.paddle1.draw();
+                this.paddle2.draw();
+                this.drawOverlay();
+                this.drawPausedText();
             }
             if (this.gameState === GAME_VARIABLES.gameState.PREPARATION) {
                 this.paddle1.draw();
@@ -387,12 +404,21 @@ function ready() {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.restore();
         }
+        // Text to tell player game is paused.
+        drawPausedText() {
+            ctx.save();
+            ctx.font = "30px Courier"
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#FFF";
+            ctx.fillText("Paused", canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+        }
         // Check for player scoring a point.
         checkScored() {
             var scoredLeft = (this.ball.x <= 0);
             var scoredRight = (this.ball.x + this.ball.width >= canvas.width);
             if (scoredLeft || scoredRight) {
-                this.gameState = GAME_VARIABLES.gameState.PREPARATION;
+                
                 if (scoredLeft) { 
                     this.scoreBoard.incrementPlayerTwo();
                     this.nextBallDirection = -1;
@@ -404,16 +430,43 @@ function ready() {
                 if (this.scoreBoard.getHighestScore() >= 11) {
                     this.postGame();
                 } else {
-                    this.spawnBall();
+                    this.gameState = GAME_VARIABLES.gameState.PREPARATION;
                 }
             }
+        }
+        //
+        prepareNext(dt) {
+            this.timer += dt;
+            if (this.timer >= 2) {
+                this.gameState = GAME_VARIABLES.gameState.PLAYING;
+                this.spawnBall();
+                this.timer = 0;
+            }
+        }
+        // Check if the game should be paused.
+        checkPaused() {
+            const spacebarPressed = GAME_VARIABLES.inputKeys[GAME_VARIABLES.sharedControls.pause];
+            if (this.acceptPause && spacebarPressed) {
+                this.acceptPause = false;
+
+                if (this.gameState === GAME_VARIABLES.gameState.PAUSED) {
+                    this.gameState = this.returnState;
+                }
+                else {
+                    this.returnState = this.gameState;
+                    this.gameState = GAME_VARIABLES.gameState.PAUSED;
+                }
+            }
+            // Do not accept another pause call until spacebar is released.
+            else if (!spacebarPressed) {
+                this.acceptPause = true;
+            } 
         }
         gameStart() {
             this.gameState = GAME_VARIABLES.gameState.PREPARATION;
             this.scoreBoard.resetScore();
             this.paddle1.reset();
             this.paddle2.reset();
-            this.spawnBall();
         }
         spawnBall() {
             // Possible starting positions and angles.
@@ -425,20 +478,19 @@ function ready() {
             const startAngles = [0, 80, 80, 80].map((x) => {
                 return x * Math.PI / 180; // Convert to radians.
             });
-            setTimeout(() => {
-                var position = { 
-                    x: canvas.width / 2 - this.nextBallDirection * 20, // Slightly behind the line divider
-                    y: startPositionsY[Math.floor(Math.random() * startPositionsY.length)]
-                }
-                var angle = startAngles[Math.floor(Math.random() * startAngles.length)];
-                var negativeOrPositive = Math.random() < 0.5 ? -1 : 1;
-                var direction = { 
-                    x: Math.cos(angle) * this.nextBallDirection,
-                    y: Math.sin(angle) * negativeOrPositive
-                }
-                this.ball.spawn(position, direction, this.ball.minSpeed);
-                this.gameState = GAME_VARIABLES.gameState.PLAYING;
-            }, 2000);
+            
+            var position = { 
+                x: canvas.width / 2 - this.nextBallDirection * 20, // Slightly behind the line divider
+                y: startPositionsY[Math.floor(Math.random() * startPositionsY.length)]
+            }
+            var angle = startAngles[Math.floor(Math.random() * startAngles.length)];
+            var negativeOrPositive = Math.random() < 0.5 ? -1 : 1;
+            var direction = { 
+                x: Math.cos(angle) * this.nextBallDirection,
+                y: Math.sin(angle) * negativeOrPositive
+            }
+            this.ball.spawn(position, direction, this.ball.minSpeed);
+            this.gameState = GAME_VARIABLES.gameState.PLAYING;
         }
         preGame() {
             this.gameState = GAME_VARIABLES.gameState.GAMEOVER;
@@ -951,14 +1003,19 @@ function ready() {
     screenManager.addScreen(GAME_VARIABLES.gameScreen.GAME, gameScreen);
     screenManager.requestScreen(GAME_VARIABLES.gameScreen.MENU);
 
+    var lastTime = Date.now();
     function gameLoop() {
+        var now = Date.now();
+        var dt = (now - lastTime) / 1000;
+        lastTime = now;
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Update game entities.
-        screenManager.draw();
+        screenManager.update(dt);
 
         // Draw game entities.
-        screenManager.update();
+        screenManager.draw();
 
         // Call the next frame.
         loopId = requestAnimationFrame(gameLoop);
@@ -974,6 +1031,7 @@ function ready() {
             case GAME_VARIABLES.p1Controls.down:
             case GAME_VARIABLES.p2Controls.up:
             case GAME_VARIABLES.p2Controls.down:
+            case GAME_VARIABLES.sharedControls.pause:
                 GAME_VARIABLES.inputKeys[e.key] = true;
                 break;
         }
@@ -984,6 +1042,7 @@ function ready() {
             case GAME_VARIABLES.p1Controls.down:
             case GAME_VARIABLES.p2Controls.up:
             case GAME_VARIABLES.p2Controls.down:
+            case GAME_VARIABLES.sharedControls.pause:
                 GAME_VARIABLES.inputKeys[e.key] = false;
                 break;
         }
