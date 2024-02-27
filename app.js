@@ -363,6 +363,7 @@ function ready() {
         }
         // Line dividing two players' sides.
         drawScreenDivider() {
+            ctx.save();
             ctx.beginPath();
             ctx.moveTo(400, 0);
             ctx.lineTo(400, 600);
@@ -370,6 +371,7 @@ function ready() {
             ctx.setLineDash([8]);
             ctx.lineWidth = 1.5;
             ctx.stroke();
+            ctx.restore();
         };
         // Scoring area behind each player.
         drawGoals() {
