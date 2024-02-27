@@ -1,6 +1,7 @@
 const GAME_VARIABLES = {
     canvasWidth: 800,
     canvasHeight: 600,
+    frameRate: 60,
     inputKeys: [],
     p1Controls: { up: "w", down: "s" },
     p2Controls: { up: "ArrowUp", down: "ArrowDown" },
@@ -395,9 +396,9 @@ function ready() {
         }
         update(dt) {
             if (this.gameState === GAME_VARIABLES.gameState.PLAYING) {
-                this.paddle1.update();
-                this.paddle2.update();
-                this.ball.update();
+                this.paddle1.update(dt);
+                this.paddle2.update(dt);
+                this.ball.update(dt);
                 this.ball.collideLeft(paddle1);
                 this.ball.collideRight(paddle2);
                 this.checkScored();
@@ -407,13 +408,13 @@ function ready() {
                 this.checkPaused();
             }
             if (this.gameState === GAME_VARIABLES.gameState.PREPARATION) {
-                this.paddle1.update();
-                this.paddle2.update();
+                this.paddle1.update(dt);
+                this.paddle2.update(dt);
                 this.checkPaused();
                 this.prepareNext(dt);
             }
             if (this.gameState === GAME_VARIABLES.gameState.GAMEOVER) {
-                this.ball.update();
+                this.ball.update(dt);
             }
             if (this.gameState === GAME_VARIABLES.gameState.CONTINUE) {
                 // Do not update.
@@ -512,7 +513,7 @@ function ready() {
         }
         //
         prepareNext(dt) {
-            this.timer += dt;
+            this.timer += dt / GAME_VARIABLES.frameRate;
             if (this.timer >= 2) {
                 this.gameState = GAME_VARIABLES.gameState.PLAYING;
                 this.spawnBall();
@@ -861,7 +862,7 @@ function ready() {
             this.y = y - this.width / 2;
             this.draw();
         }
-        update() {
+        update(dt) {
             // Reverse directions at screen edges.
             const passedLeftBound = (this.x < 0);
             const passedRightBound = (this.x + this.width >= canvas.width);
@@ -891,8 +892,8 @@ function ready() {
             // Update position.
             const adjustSpeedRatio = Math.abs( // Ratio to adjust for constant horizontal speed.
                 this.fixedHorizontalSpeed / (this.speed * this.direction.x)); 
-            this.x += this.speed * this.direction.x * adjustSpeedRatio;
-            this.y += this.speed * this.direction.y;
+            this.x += dt * this.speed * this.direction.x * adjustSpeedRatio;
+            this.y += dt * this.speed * this.direction.y;
         }
         collideLeft(leftPaddle) {
             var surfaceOfPaddleX = leftPaddle.x + leftPaddle.width;
@@ -1017,13 +1018,13 @@ function ready() {
             ctx.fillStyle = "#FFF";
             ctx.fillRect(this.x, this.y, this.width, this.height);
         }
-        update() {
+        update(dt) {
             // Update position.
             if (GAME_VARIABLES.inputKeys[this.controls.up]) {
-                this.y -= this.speed;
+                this.y -= dt * this.speed;
             }
             if (GAME_VARIABLES.inputKeys[this.controls.down]) {
-                this.y += this.speed;
+                this.y += dt * this.speed;
             }
             
             // Accelerate the paddle.
@@ -1088,9 +1089,10 @@ function ready() {
     screenManager.requestScreen(GAME_VARIABLES.gameScreen.MENU);
 
     var lastTime = Date.now();
+    var interval = 1000 / GAME_VARIABLES.frameRate;
     function gameLoop() {
         var now = Date.now();
-        var dt = (now - lastTime) / 1000;
+        var dt = (now - lastTime) / interval;
         lastTime = now;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
